@@ -369,15 +369,15 @@
         <h2 id="authTitle">Welcome back.</h2>
 
         <div class="auth-tabs">
-          <button id="loginTab" class="auth-tab active" type="button" onclick="setAuthMode('login')">Login Admin</button>
-          <button id="signupTab" class="auth-tab" type="button" onclick="setAuthMode('signup')">Daftar Member</button>
+          <button id="loginTab" class="auth-tab active" type="button" onclick="setAuthMode('login')">Login</button>
+          <button id="signupTab" class="auth-tab" type="button" onclick="setAuthMode('signup')">Daftar</button>
         </div>
 
         <div id="authMessage" class="auth-message"></div>
 
         <form id="authForm" class="form">
           <div id="nameField" class="field hidden">
-            <label>NAMA MEMBER</label>
+            <label>NAMA LENGKAP</label>
             <input id="adminName" type="text" autocomplete="name" placeholder="Nama lengkap member" />
           </div>
 
@@ -396,7 +396,7 @@
             <input id="authPasswordConfirm" type="password" autocomplete="new-password" minlength="6" placeholder="Ulangi password" />
           </div>
 
-          <button id="authSubmit" class="primary-btn lime" type="submit">Login Admin</button>
+          <button id="authSubmit" class="primary-btn lime" type="submit">Login</button>
         </form>
       </div>
     </div>
@@ -591,8 +591,8 @@
       document.getElementById("nameField").classList.toggle("hidden", login);
       document.getElementById("confirmPasswordField").classList.toggle("hidden", login);
 
-      document.getElementById("authTitle").textContent = login ? "Admin login." : "Daftar member.";
-      document.getElementById("authSubmit").textContent = login ? "Login Admin" : "Buat Akun Member";
+      document.getElementById("authTitle").textContent = login ? "Login" : "Daftar Akun";
+      document.getElementById("authSubmit").textContent = login ? "Login" : "Buat Akun";
       document.getElementById("authPassword").autocomplete = login ? "current-password" : "new-password";
 
       clearAuthMessage();
@@ -657,7 +657,7 @@
         showAuthMessage(translateAuthError(err?.message || "Terjadi kesalahan."));
       }finally{
         btn.disabled = false;
-        btn.textContent = authMode === "login" ? "Login Admin" : "Buat Akun Member";
+        btn.textContent = authMode === "login" ? "Login" : "Buat Akun";
       }
     });
 
@@ -696,7 +696,7 @@
         currentUser = null;
         document.getElementById("appShell").classList.add("hidden");
         document.getElementById("authScreen").classList.remove("hidden");
-        showAuthMessage("Akun ini tidak memiliki akses admin.");
+        showAuthMessage("Akun ini tidak memiliki akses ke dashboard.");
         return;
       }
 
