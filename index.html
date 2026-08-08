@@ -646,10 +646,7 @@
             await sb.auth.signOut();
           }
 
-          showAuthMessage(
-            "Akun member berhasil dibuat. Akun ini tidak memiliki akses ke dashboard admin.",
-            "success"
-          );
+          clearAuthMessage();
           document.getElementById("authForm").reset();
         }else{
           const { data, error } = await sb.auth.signInWithPassword({ email, password });
@@ -674,8 +671,11 @@
       return message;
     }
 
+    let checkingRole = false;
+
     async function handleSignedIn(user){
-      if(!user) return;
+      if(!user || checkingRole) return;
+      checkingRole = true;
 
       const { data: profile, error: profileError } = await sb
         .from("profiles")
@@ -684,17 +684,19 @@
         .maybeSingle();
 
       if(profileError){
+        checkingRole = false;
         await sb.auth.signOut();
         showAuthMessage("Gagal memeriksa role akun: " + profileError.message);
         return;
       }
 
       if(!profile || profile.role !== "admin"){
+        checkingRole = false;
         await sb.auth.signOut();
         currentUser = null;
         document.getElementById("appShell").classList.add("hidden");
         document.getElementById("authScreen").classList.remove("hidden");
-        showAuthMessage("Akun ini adalah akun member dan tidak memiliki akses ke dashboard admin.");
+        showAuthMessage("Akun ini tidak memiliki akses admin.");
         return;
       }
 
@@ -706,6 +708,7 @@
       document.getElementById("adminIdentity").textContent = `${name} · ${user?.email || ""}`;
 
       await loadAllData();
+      checkingRole = false;
     }
 
     async function logout(){
@@ -718,12 +721,12 @@
       setAuthMode("login");
     }
 
-    sb.auth.onAuthStateChange(async (event, session)=>{
+    // Auth state listener tidak lagi memanggil handleSignedIn saat SIGNED_IN.
+    // Login diproses langsung setelah signInWithPassword() dan saat refresh melalui init().
+    // Ini mencegah pengecekan role berjalan dua kali bersamaan.
+    sb.auth.onAuthStateChange((event, session)=>{
       if(event === "SIGNED_OUT"){
         currentUser = null;
-      }
-      if(event === "SIGNED_IN" && session?.user && !currentUser){
-        await handleSignedIn(session.user);
       }
     });
 
