@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#111814" />
   <title>ASA Academy — Admin</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <style>
     :root{
       --bg:#f3f4f0;
@@ -19,6 +22,26 @@
       --warning:#e9ae3d;
       --shadow:0 12px 30px rgba(17,24,20,.08);
       --radius:22px;
+      --surface:#ffffff;
+      --surface-soft:#f7f8f5;
+      --input-bg:#fbfcfa;
+      --nav-bg:rgba(17,24,20,.96);
+    }
+
+    body.dark{
+      --bg:#0f1411;
+      --card:#171d19;
+      --text:#f2f5f2;
+      --muted:#9ba49e;
+      --line:#2b332e;
+      --dark:#f1f5f2;
+      --surface:#171d19;
+      --surface-soft:#1d241f;
+      --input-bg:#141a16;
+      --nav-bg:rgba(23,29,25,.97);
+      background:
+        radial-gradient(circle at top right, rgba(199,243,109,.12), transparent 35%),
+        var(--bg);
     }
 
     *{box-sizing:border-box}
@@ -34,63 +57,94 @@
     }
     button,input,select,textarea{font:inherit}
     button{cursor:pointer}
+    .hidden{display:none!important}
+
+    /* AUTH */
+    .auth-screen{
+      min-height:100vh;
+      padding:24px 16px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .auth-wrap{width:min(100%,430px)}
+    .auth-brand{
+      display:flex;align-items:center;gap:12px;
+      margin-bottom:22px;
+    }
+    .auth-logo{
+      width:56px;height:56px;border-radius:18px;
+      background:var(--dark);color:var(--brand);
+      display:grid;place-items:center;
+      font-weight:950;font-size:17px;letter-spacing:-1px;
+      box-shadow:var(--shadow);
+    }
+    .auth-brand h1{margin:0;font-size:21px;letter-spacing:-.035em}
+    .auth-brand p{margin:4px 0 0;font-size:12px;color:var(--muted)}
+    .auth-card{
+      background:var(--surface);border:1px solid var(--line);
+      border-radius:28px;padding:22px;
+      box-shadow:0 20px 45px rgba(17,24,20,.09);
+    }
+    .auth-card h2{margin:0 0 18px;font-size:25px;letter-spacing:-.045em}
+    .auth-card>p{margin:0 0 19px;color:var(--muted);font-size:12px;line-height:1.55}
+    .auth-tabs{
+      display:grid;grid-template-columns:1fr 1fr;
+      padding:4px;background:#f0f2ee;border-radius:14px;margin-bottom:17px;
+    }
+    .auth-tab{
+      border:0;background:transparent;border-radius:11px;padding:9px;
+      font-size:11px;font-weight:850;color:#727a75;
+    }
+    .auth-tab.active{background:var(--surface);color:var(--dark);box-shadow:0 3px 12px rgba(17,24,20,.07)}
+    .auth-message{
+      display:none;margin:0 0 13px;padding:10px 12px;
+      border-radius:13px;font-size:11px;line-height:1.45;
+    }
+    .auth-message.show{display:block}
+    .auth-message.error{background:#fff0f0;color:#9e3434}
+    .auth-message.success{background:#eff8df;color:#52771a}
+    .auth-footer{font-size:10px;color:#8b918d;text-align:center;margin-top:16px;line-height:1.5}
+
+    /* APP */
     .app{
       width:min(100%, 520px);
       margin:0 auto;
       min-height:100vh;
       padding:18px 16px 108px;
     }
-
     .topbar{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      margin-bottom:18px;
+      display:flex;align-items:center;justify-content:space-between;
+      gap:12px;margin-bottom:18px;
     }
     .brand-wrap{display:flex;align-items:center;gap:11px}
     .logo{
       width:46px;height:46px;border-radius:15px;
-      background:var(--dark);
-      color:var(--brand);
+      background:var(--dark);color:var(--brand);
       display:grid;place-items:center;
-      font-weight:900;letter-spacing:-1px;
-      box-shadow:var(--shadow);
+      font-weight:900;letter-spacing:-1px;box-shadow:var(--shadow);
     }
     .brand-title{font-weight:900;font-size:17px;line-height:1.1}
-    .brand-sub{font-size:12px;color:var(--muted);margin-top:3px}
+    .brand-sub{font-size:11px;color:var(--muted);margin-top:3px;max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .avatar{
-      border:0;background:#fff;width:42px;height:42px;border-radius:50%;
+      border:0;background:var(--surface);width:42px;height:42px;border-radius:50%;
       box-shadow:0 5px 18px rgba(0,0,0,.06);font-weight:800
     }
 
     .hero{
-      background:var(--dark);
-      color:#fff;
-      border-radius:28px;
-      padding:20px;
-      overflow:hidden;
-      position:relative;
-      margin-bottom:18px;
+      background:var(--dark);color:#fff;border-radius:28px;padding:20px;
+      overflow:hidden;position:relative;margin-bottom:18px;
       box-shadow:0 16px 36px rgba(17,24,20,.18);
     }
     .hero:after{
-      content:"";
-      position:absolute;
-      width:150px;height:150px;border-radius:50%;
-      background:var(--brand);
-      right:-65px;top:-68px;opacity:.95
+      content:"";position:absolute;width:150px;height:150px;border-radius:50%;
+      background:var(--brand);right:-65px;top:-68px;opacity:.95
     }
     .hero-label{color:#bac1bd;font-size:12px;text-transform:uppercase;letter-spacing:.12em}
-    .hero h1{font-size:26px;margin:8px 0 6px;line-height:1.06;letter-spacing:-.04em}
+    .hero h1{font-size:26px;margin:0;line-height:1.06;letter-spacing:-.04em}
     .hero p{font-size:13px;color:#cfd5d1;margin:0;max-width:75%;line-height:1.5}
-    .stats{
-      display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:18px
-    }
-    .stat{
-      padding:11px 10px;border:1px solid rgba(255,255,255,.11);
-      background:rgba(255,255,255,.06);border-radius:16px
-    }
+    .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:20px}
+    .stat{padding:11px 10px;border:1px solid rgba(255,255,255,.11);background:rgba(255,255,255,.06);border-radius:16px}
     .stat strong{display:block;font-size:18px}
     .stat span{font-size:10px;color:#bfc5c1}
 
@@ -98,99 +152,53 @@
     .page.active{display:block}
     @keyframes fade{from{opacity:.5;transform:translateY(5px)}to{opacity:1;transform:none}}
 
-    .section-head{
-      display:flex;justify-content:space-between;align-items:end;
-      gap:12px;margin:18px 2px 11px
-    }
+    .section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:18px 2px 11px}
     .section-head h2{font-size:20px;margin:0;letter-spacing:-.025em}
     .section-head p{margin:3px 0 0;font-size:12px;color:var(--muted)}
-    .text-btn{
-      border:0;background:transparent;color:var(--dark);font-weight:800;font-size:12px
-    }
+    .text-btn{border:0;background:transparent;color:var(--dark);font-weight:800;font-size:12px}
 
-    .session-grid{
-      display:grid;gap:11px;
-    }
+    .session-grid{display:grid;gap:11px}
     .session-card{
-      background:var(--card);border:1px solid var(--line);
-      border-radius:var(--radius);padding:16px;
-      display:flex;align-items:center;gap:14px;
-      box-shadow:0 8px 22px rgba(17,24,20,.045);
-      transition:.2s ease;
+      width:100%;text-align:left;background:var(--card);border:1px solid var(--line);
+      border-radius:var(--radius);padding:16px;display:flex;align-items:center;gap:14px;
+      box-shadow:0 8px 22px rgba(17,24,20,.045);transition:.2s ease;color:var(--text)
     }
     .session-card:active{transform:scale(.99)}
-    .session-icon{
-      width:52px;height:52px;border-radius:17px;display:grid;place-items:center;
-      background:#f1f4ea;font-size:22px;flex:0 0 auto
-    }
-    .session-card h3{margin:0 0 5px;font-size:15px}
+    .session-icon{width:52px;height:52px;border-radius:17px;display:grid;place-items:center;background:#f1f4ea;font-size:22px;flex:0 0 auto}
+    .session-card h3{margin:0;font-size:15px}
     .session-card p{margin:0;color:var(--muted);font-size:11px}
     .session-card .price{margin-left:auto;text-align:right}
     .session-card .price strong{display:block;font-size:14px}
     .session-card .price span{font-size:10px;color:var(--muted)}
-    .session-card.featured{
-      background:linear-gradient(135deg,#d6ff88,#c4ee6c);
-      border-color:#bce75e;
-    }
+    .session-card.featured{background:linear-gradient(135deg,#d6ff88,#c4ee6c);border-color:#bce75e}
     .session-card.featured .session-icon{background:rgba(17,24,20,.09)}
 
-    .filter-row{
-      display:flex;gap:8px;overflow:auto;padding-bottom:3px;scrollbar-width:none
-    }
+    .filter-row{display:flex;gap:8px;overflow:auto;padding-bottom:3px;scrollbar-width:none}
     .filter-row::-webkit-scrollbar{display:none}
-    .chip{
-      white-space:nowrap;border:1px solid var(--line);background:#fff;
-      padding:9px 12px;border-radius:999px;font-size:11px;font-weight:750;color:#515854
-    }
+    .chip{white-space:nowrap;border:1px solid var(--line);background:var(--surface);padding:9px 12px;border-radius:999px;font-size:11px;font-weight:750;color:#515854}
     .chip.active{background:var(--dark);border-color:var(--dark);color:#fff}
 
     .list{display:grid;gap:10px}
-    .list-card{
-      background:#fff;border:1px solid var(--line);border-radius:20px;padding:14px;
-      box-shadow:0 7px 18px rgba(17,24,20,.035);
-    }
+    .list-card{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:14px;box-shadow:0 7px 18px rgba(17,24,20,.035)}
     .list-top{display:flex;gap:10px;align-items:center}
-    .initial{
-      width:39px;height:39px;border-radius:13px;background:#edf0eb;
-      display:grid;place-items:center;font-weight:900;font-size:13px
-    }
+    .initial{width:39px;height:39px;border-radius:13px;background:#edf0eb;display:grid;place-items:center;font-weight:900;font-size:13px}
     .grow{flex:1;min-width:0}
     .list-card h4{margin:0;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .sub{font-size:10.5px;color:var(--muted);margin-top:3px}
-    .badge{
-      font-size:9px;font-weight:850;padding:6px 8px;border-radius:999px;
-      background:#eef6dc;color:#587d1d;white-space:nowrap
-    }
+    .badge{font-size:9px;font-weight:850;padding:6px 8px;border-radius:999px;background:#eef6dc;color:#587d1d;white-space:nowrap}
     .badge.dark{background:#eef0ef;color:#343a36}
     .badge.warn{background:#fff2da;color:#9a6616}
-    .meta-row{
-      margin-top:11px;padding-top:10px;border-top:1px dashed var(--line);
-      display:flex;justify-content:space-between;gap:9px;color:#68706b;font-size:10px
-    }
-
-    .review-score{
-      display:flex;align-items:center;gap:10px;margin-top:11px
-    }
+    .badge.danger{background:#fff0f0;color:#a83c3c}
+    .meta-row{margin-top:11px;padding-top:10px;border-top:1px dashed var(--line);display:flex;justify-content:space-between;gap:9px;color:#68706b;font-size:10px}
+    .review-score{display:flex;align-items:center;gap:10px;margin-top:11px}
     .stars{letter-spacing:1px;color:#e5a913;font-size:14px}
-    .review-note{
-      margin:9px 0 0;padding:10px 11px;background:#f7f8f5;border-radius:13px;
-      font-size:11px;line-height:1.5;color:#4c544f
-    }
-
-    .member-card .member-actions{
-      display:flex;gap:6px;margin-top:11px
-    }
-    .mini-btn{
-      border:1px solid var(--line);background:#fff;padding:7px 10px;border-radius:10px;
-      font-size:10px;font-weight:800
-    }
+    .review-note{margin:9px 0 0;padding:10px 11px;background:var(--surface-soft);border-radius:13px;font-size:11px;line-height:1.5;color:#4c544f}
+    .member-actions{display:flex;gap:6px;margin-top:11px;flex-wrap:wrap}
+    .mini-btn{border:1px solid var(--line);background:var(--surface);padding:7px 10px;border-radius:10px;font-size:10px;font-weight:800}
     .mini-btn.danger{color:var(--danger)}
-
-    .empty{
-      text-align:center;padding:32px 20px;background:#fff;border:1px dashed #d6dad4;
-      border-radius:22px;color:var(--muted);font-size:12px
-    }
+    .empty{text-align:center;padding:32px 20px;background:var(--surface);border:1px dashed #d6dad4;border-radius:22px;color:var(--muted);font-size:12px}
     .empty .emoji{font-size:30px;margin-bottom:7px}
+    .loading{text-align:center;padding:25px;color:var(--muted);font-size:12px}
 
     .fab{
       position:fixed;right:max(18px, calc((100vw - 520px)/2 + 18px));
@@ -198,61 +206,144 @@
       background:var(--brand);color:var(--dark);font-size:27px;font-weight:700;
       box-shadow:0 14px 25px rgba(99,139,35,.32);z-index:20
     }
-
     .bottom-nav{
       position:fixed;z-index:30;bottom:14px;left:50%;transform:translateX(-50%);
-      width:min(calc(100% - 28px), 492px);
-      padding:8px;background:rgba(17,24,20,.96);backdrop-filter:blur(14px);
-      border-radius:22px;display:grid;grid-template-columns:repeat(3,1fr);gap:4px;
+      width:min(calc(100% - 28px),492px);padding:8px;background:var(--nav-bg);
+      backdrop-filter:blur(14px);border-radius:22px;display:grid;grid-template-columns:repeat(3,1fr);gap:4px;
       box-shadow:0 18px 45px rgba(17,24,20,.32)
     }
-    .nav-btn{
-      border:0;background:transparent;color:#8f9892;padding:9px 6px;
-      border-radius:16px;font-size:10px;font-weight:750
-    }
+    .nav-btn{border:0;background:transparent;color:#8f9892;padding:9px 6px;border-radius:16px;font-size:10px;font-weight:750}
     .nav-btn span{display:block;font-size:19px;margin-bottom:3px}
     .nav-btn.active{background:var(--brand);color:var(--dark)}
 
-    .modal-backdrop{
-      position:fixed;inset:0;background:rgba(17,24,20,.45);display:none;
-      align-items:flex-end;justify-content:center;z-index:100;padding:0
-    }
+    .modal-backdrop{position:fixed;inset:0;background:rgba(17,24,20,.45);display:none;align-items:flex-end;justify-content:center;z-index:100;padding:0}
     .modal-backdrop.show{display:flex}
-    .sheet{
-      width:min(100%,520px);max-height:92vh;overflow:auto;background:#fff;
-      border-radius:28px 28px 0 0;padding:19px 16px 28px;
-      box-shadow:0 -20px 45px rgba(0,0,0,.18);animation:sheetup .22s ease
-    }
+    .sheet{width:min(100%,520px);max-height:92vh;overflow:auto;background:var(--surface);border-radius:28px 28px 0 0;padding:19px 16px 28px;box-shadow:0 -20px 45px rgba(0,0,0,.18);animation:sheetup .22s ease}
     @keyframes sheetup{from{transform:translateY(35px);opacity:.7}to{transform:none;opacity:1}}
     .sheet-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
     .sheet-head h3{margin:0;font-size:18px}
-    .close-btn{
-      border:0;background:#f0f2ef;width:34px;height:34px;border-radius:50%;font-size:19px
-    }
+    .close-btn{border:0;background:#f0f2ef;width:34px;height:34px;border-radius:50%;font-size:19px}
+
     .form{display:grid;gap:12px}
     .field label{display:block;font-size:10px;font-weight:850;margin:0 0 6px;color:#515854}
     .field input,.field select,.field textarea{
       width:100%;border:1px solid var(--line);border-radius:14px;padding:12px 13px;
-      background:#fbfcfa;color:var(--text);outline:none;font-size:13px
+      background:var(--input-bg);color:var(--text);outline:none;font-size:13px
     }
     .field textarea{min-height:88px;resize:vertical}
-    .field input:focus,.field select:focus,.field textarea:focus{
-      border-color:#a9cf58;box-shadow:0 0 0 3px rgba(199,243,109,.25)
-    }
+    .field input:focus,.field select:focus,.field textarea:focus{border-color:#a9cf58;box-shadow:0 0 0 3px rgba(199,243,109,.25)}
     .two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .primary-btn{
-      border:0;background:var(--dark);color:#fff;border-radius:16px;padding:13px 15px;
-      font-weight:850;margin-top:3px
-    }
+    .primary-btn{width:100%;border:0;background:var(--dark);color:#fff;border-radius:16px;padding:13px 15px;font-weight:850;margin-top:3px}
     .primary-btn.lime{background:var(--brand);color:var(--dark)}
+    .primary-btn:disabled{opacity:.6;cursor:not-allowed}
+    .secondary-btn{width:100%;border:1px solid var(--line);background:var(--surface);color:var(--dark);border-radius:16px;padding:12px 15px;font-weight:850}
     .hint{font-size:10px;color:var(--muted);margin-top:-4px}
-
-    .search{
-      display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);
-      border-radius:15px;padding:10px 12px;margin-bottom:10px
-    }
+    .search{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:15px;padding:10px 12px;margin-bottom:10px}
     .search input{border:0;outline:none;width:100%;font-size:12px;background:transparent}
     .tiny{font-size:10px;color:var(--muted)}
+    .error-box{padding:12px;border-radius:14px;background:#fff0f0;color:#a23c3c;font-size:11px;line-height:1.45}
+
+    body.dark .auth-card,
+    body.dark .session-card,
+    body.dark .list-card,
+    body.dark .search,
+    body.dark .sheet,
+    body.dark .avatar,
+    body.dark .mini-btn,
+    body.dark .auth-tab.active{
+      background:var(--surface);
+      color:var(--text);
+    }
+
+    body.dark .session-card.featured{
+      background:linear-gradient(135deg,#b7df5d,#8fb83d);
+      color:#111814;
+      border-color:#8fb83d;
+    }
+
+    body.dark .session-card.featured p,
+    body.dark .session-card.featured .price span{
+      color:#35421f;
+    }
+
+    body.dark .hero{
+      background:#171d19;
+    }
+
+    body.dark .auth-tabs{
+      background:#111713;
+    }
+
+    body.dark .field input,
+    body.dark .field select,
+    body.dark .field textarea{
+      color:var(--text);
+      background:var(--input-bg);
+    }
+
+    body.dark .chip{
+      background:var(--surface);
+      color:var(--muted);
+    }
+
+    body.dark .chip.active{
+      background:var(--brand);
+      color:#111814;
+      border-color:var(--brand);
+    }
+
+    body.dark .initial{
+      background:#252d27;
+    }
+
+    body.dark .badge.dark{
+      background:#29312b;
+      color:#dce3de;
+    }
+
+    body.dark .review-note{
+      background:var(--surface-soft);
+      color:#c5cec8;
+    }
+
+    body.dark .empty{
+      background:var(--surface);
+      border-color:#39433c;
+    }
+
+    .top-actions{
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+
+    .icon-btn{
+      border:0;
+      background:var(--surface);
+      color:var(--text);
+      width:42px;
+      height:42px;
+      border-radius:50%;
+      display:grid;
+      place-items:center;
+      box-shadow:0 5px 18px rgba(0,0,0,.06);
+      padding:0;
+    }
+
+    .icon-btn svg{
+      width:19px;
+      height:19px;
+      stroke:currentColor;
+      fill:none;
+      stroke-width:1.9;
+      stroke-linecap:round;
+      stroke-linejoin:round;
+    }
+
+    body.dark .icon-btn,
+    body.dark .avatar{
+      box-shadow:0 5px 18px rgba(0,0,0,.18);
+    }
 
     @media(min-width:700px){
       body{padding:18px 0}
@@ -262,117 +353,152 @@
   </style>
 </head>
 <body>
-  <main class="app">
-    <header class="topbar">
-      <div class="brand-wrap">
-        <div class="logo">ASA</div>
-        <div>
-          <div class="brand-title">ASA Academy</div>
-          <div class="brand-sub">Padel Coaching Admin</div>
-        </div>
-      </div>
-      <button class="avatar" title="Admin">A</button>
-    </header>
 
-    <section class="hero">
-      <div class="hero-label">Admin Dashboard</div>
-      <h1>Manage your<br>academy sessions.</h1>
-      <p>Kelola booking, perkembangan murid, dan data member dalam satu dashboard mobile.</p>
-      <div class="stats">
-        <div class="stat"><strong id="statBookings">0</strong><span>Bookings</span></div>
-        <div class="stat"><strong id="statMembers">0</strong><span>Members</span></div>
-        <div class="stat"><strong id="statReviews">0</strong><span>Reviews</span></div>
-      </div>
-    </section>
-
-    <section id="bookingPage" class="page active">
-      <div class="section-head">
+  <!-- LOGIN / SIGN UP -->
+  <section id="authScreen" class="auth-screen">
+    <div class="auth-wrap">
+      <div class="auth-brand">
+        <div class="auth-logo">ASA</div>
         <div>
-          <h2>Booking Session</h2>
-          <p>Pilih program coaching ASA Academy.</p>
+          <h1>ASA Academy</h1>
+          
         </div>
       </div>
 
-      <div class="session-grid">
-        <button class="session-card" onclick="openBooking('Single Session')">
-          <div class="session-icon">🎾</div>
-          <div class="grow">
-            <h3>Single Session</h3>
-            <p>1x private / group coaching session</p>
+      <div class="auth-card">
+        <h2 id="authTitle">Welcome back.</h2>
+
+        <div class="auth-tabs">
+          <button id="loginTab" class="auth-tab active" type="button" onclick="setAuthMode('login')">Login Admin</button>
+          <button id="signupTab" class="auth-tab" type="button" onclick="setAuthMode('signup')">Daftar Member</button>
+        </div>
+
+        <div id="authMessage" class="auth-message"></div>
+
+        <form id="authForm" class="form">
+          <div id="nameField" class="field hidden">
+            <label>NAMA MEMBER</label>
+            <input id="adminName" type="text" autocomplete="name" placeholder="Nama lengkap member" />
           </div>
-          <div class="price"><strong>1 Session</strong><span>Book now</span></div>
-        </button>
 
-        <button class="session-card featured" onclick="openBooking('Package 4 Session')">
-          <div class="session-icon">⚡</div>
-          <div class="grow">
-            <h3>Package 4 Session</h3>
-            <p>Program latihan rutin 4 pertemuan</p>
+          <div class="field">
+            <label>EMAIL</label>
+            <input id="authEmail" type="email" autocomplete="email" required placeholder="admin@asaacademy.com" />
           </div>
-          <div class="price"><strong>4 Sessions</strong><span>Popular</span></div>
-        </button>
 
-        <button class="session-card" onclick="openBooking('Package 8 Session')">
-          <div class="session-icon">🏆</div>
-          <div class="grow">
-            <h3>Package 8 Session</h3>
-            <p>Program intensif untuk progress maksimal</p>
+          <div class="field">
+            <label>PASSWORD</label>
+            <input id="authPassword" type="password" autocomplete="current-password" required minlength="6" placeholder="Minimal 6 karakter" />
           </div>
-          <div class="price"><strong>8 Sessions</strong><span>Best value</span></div>
-        </button>
-      </div>
 
-      <div class="section-head">
-        <div>
-          <h2>Recent Booking</h2>
-          <p>Jadwal coaching terbaru.</p>
+          <div id="confirmPasswordField" class="field hidden">
+            <label>ULANGI PASSWORD</label>
+            <input id="authPasswordConfirm" type="password" autocomplete="new-password" minlength="6" placeholder="Ulangi password" />
+          </div>
+
+          <button id="authSubmit" class="primary-btn lime" type="submit">Login Admin</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- APP -->
+  <div id="appShell" class="hidden">
+    <main class="app">
+      <header class="topbar">
+        <div class="brand-wrap">
+          <div class="logo">ASA</div>
+          <div>
+            <div class="brand-title">ASA Academy</div>
+            <div id="adminIdentity" class="brand-sub">Admin</div>
+          </div>
         </div>
-      </div>
-
-      <div class="filter-row" id="bookingFilters">
-        <button class="chip active" data-filter="all">Semua</button>
-        <button class="chip" data-filter="Single Session">Single</button>
-        <button class="chip" data-filter="Package 4 Session">4 Session</button>
-        <button class="chip" data-filter="Package 8 Session">8 Session</button>
-      </div>
-      <div style="height:10px"></div>
-      <div id="bookingList" class="list"></div>
-    </section>
-
-    <section id="reviewPage" class="page">
-      <div class="section-head">
-        <div>
-          <h2>Student Review</h2>
-          <p>Catat evaluasi setelah coaching.</p>
+        <div class="top-actions">
+          <button id="themeToggle" class="icon-btn" type="button" title="Ganti tema" aria-label="Ganti mode gelap atau terang" onclick="toggleTheme()"></button>
+          <button class="avatar" title="Logout" aria-label="Logout" onclick="logout()">↗</button>
         </div>
-        <button class="text-btn" onclick="openReview()">+ Tambah</button>
-      </div>
-      <div id="reviewList" class="list"></div>
-    </section>
+      </header>
 
-    <section id="memberPage" class="page">
-      <div class="section-head">
-        <div>
-          <h2>Members</h2>
-          <p>Database murid ASA Academy.</p>
+      <section class="hero">
+        <h1>Manage your<br>academy sessions.</h1>
+        <div class="stats">
+          <div class="stat"><strong id="statBookings">0</strong><span>Bookings</span></div>
+          <div class="stat"><strong id="statMembers">0</strong><span>Members</span></div>
+          <div class="stat"><strong id="statReviews">0</strong><span>Reviews</span></div>
         </div>
-        <button class="text-btn" onclick="openMember()">+ Member</button>
-      </div>
-      <div class="search">
-        <span>⌕</span>
-        <input id="memberSearch" type="search" placeholder="Cari nama atau nomor WhatsApp..." />
-      </div>
-      <div id="memberList" class="list"></div>
-    </section>
-  </main>
+      </section>
 
-  <button class="fab" id="fab" onclick="fabAction()" aria-label="Tambah data">+</button>
+      <section id="bookingPage" class="page active">
+        <div class="section-head">
+          <div>
+            <h2>Booking Session</h2>
+            
+          </div>
+        </div>
 
-  <nav class="bottom-nav">
-    <button class="nav-btn active" data-page="bookingPage"><span>◉</span>Booking</button>
-    <button class="nav-btn" data-page="reviewPage"><span>★</span>Review</button>
-    <button class="nav-btn" data-page="memberPage"><span>♟</span>Member</button>
-  </nav>
+        <div class="session-grid">
+          <button class="session-card" onclick="openBooking('Single Session')">
+            <div class="session-icon">🎾</div>
+            <div class="grow"><h3>Single Session</h3></div>
+            <div class="price"><strong>1 Session</strong></div>
+          </button>
+
+          <button class="session-card featured" onclick="openBooking('Package 4 Session')">
+            <div class="session-icon">⚡</div>
+            <div class="grow"><h3>Package 4 Session</h3></div>
+            <div class="price"><strong>4 Sessions</strong></div>
+          </button>
+
+          <button class="session-card" onclick="openBooking('Package 8 Session')">
+            <div class="session-icon">🏆</div>
+            <div class="grow"><h3>Package 8 Session</h3></div>
+            <div class="price"><strong>8 Sessions</strong></div>
+          </button>
+        </div>
+
+        <div class="section-head">
+          <div><h2>Recent Booking</h2></div>
+        </div>
+
+        <div class="filter-row" id="bookingFilters">
+          <button class="chip active" data-filter="all">Semua</button>
+          <button class="chip" data-filter="Single Session">Single</button>
+          <button class="chip" data-filter="Package 4 Session">4 Session</button>
+          <button class="chip" data-filter="Package 8 Session">8 Session</button>
+        </div>
+        <div style="height:10px"></div>
+        <div id="bookingList" class="list"></div>
+      </section>
+
+      <section id="reviewPage" class="page">
+        <div class="section-head">
+          <div><h2>Student Review</h2></div>
+          <button class="text-btn" onclick="openReview()">+ Tambah</button>
+        </div>
+        <div id="reviewList" class="list"></div>
+      </section>
+
+      <section id="memberPage" class="page">
+        <div class="section-head">
+          <div><h2>Members</h2></div>
+          <button class="text-btn" onclick="openMember()">+ Member</button>
+        </div>
+        <div class="search">
+          <span>⌕</span>
+          <input id="memberSearch" type="search" placeholder="Cari nama atau nomor WhatsApp..." />
+        </div>
+        <div id="memberList" class="list"></div>
+      </section>
+    </main>
+
+    <button class="fab" id="fab" onclick="fabAction()" aria-label="Tambah data">+</button>
+
+    <nav class="bottom-nav">
+      <button class="nav-btn active" data-page="bookingPage"><span>◉</span>Booking</button>
+      <button class="nav-btn" data-page="reviewPage"><span>★</span>Review</button>
+      <button class="nav-btn" data-page="memberPage"><span>♟</span>Member</button>
+    </nav>
+  </div>
 
   <div class="modal-backdrop" id="modal">
     <div class="sheet">
@@ -385,32 +511,266 @@
   </div>
 
   <script>
-    const KEY = "asa_academy_admin_v1";
+    // ============================================================
+    // SUPABASE CONFIG
+    // Publishable key memang diperbolehkan berada di frontend.
+    // JANGAN pernah menaruh service_role / secret key di file HTML.
+    // ============================================================
+    const SUPABASE_URL = "https://ctuvtkhwycgwlohoetxv.supabase.co";
+    const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_z5NvUm_TCIFJKq4vETEVEA_smkxGaaF";
+
+    const { createClient } = supabase;
+    const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+    let currentUser = null;
     let activePage = "bookingPage";
     let bookingFilter = "all";
     let editingMemberId = null;
+    let authMode = "login";
 
-    const starter = {
-      members: [
-        {id: crypto.randomUUID(), name:"Raka Pratama", phone:"0812 3456 7890", level:"Beginner", joined:"2026-08-01"},
-        {id: crypto.randomUUID(), name:"Nadia Putri", phone:"0813 7700 2198", level:"Intermediate", joined:"2026-08-03"}
-      ],
+    let db = {
+      members: [],
       bookings: [],
       reviews: []
     };
 
-    let db = loadDB();
+    // ---------------- THEME ----------------
+    const sunIcon = `
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="4"></circle>
+        <path d="M12 2v2"></path>
+        <path d="M12 20v2"></path>
+        <path d="M4.93 4.93l1.41 1.41"></path>
+        <path d="M17.66 17.66l1.41 1.41"></path>
+        <path d="M2 12h2"></path>
+        <path d="M20 12h2"></path>
+        <path d="M4.93 19.07l1.41-1.41"></path>
+        <path d="M17.66 6.34l1.41-1.41"></path>
+      </svg>`;
 
-    function loadDB(){
-      try{
-        const saved = localStorage.getItem(KEY);
-        return saved ? JSON.parse(saved) : starter;
-      }catch(e){ return starter; }
+    const moonIcon = `
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M20.5 14.3A8.5 8.5 0 0 1 9.7 3.5 8.6 8.6 0 1 0 20.5 14.3z"></path>
+      </svg>`;
+
+    function applyTheme(theme){
+      const isDark = theme === "dark";
+      document.body.classList.toggle("dark", isDark);
+      document.documentElement.style.colorScheme = isDark ? "dark" : "light";
+
+      const btn = document.getElementById("themeToggle");
+      if(btn){
+        // Tampilkan icon mode tujuan: bulan saat light, matahari saat dark.
+        btn.innerHTML = isDark ? sunIcon : moonIcon;
+        btn.title = isDark ? "Mode terang" : "Mode gelap";
+        btn.setAttribute("aria-label", isDark ? "Aktifkan mode terang" : "Aktifkan mode gelap");
+      }
     }
 
-    function saveDB(){
-      localStorage.setItem(KEY, JSON.stringify(db));
+    function toggleTheme(){
+      const next = document.body.classList.contains("dark") ? "light" : "dark";
+      localStorage.setItem("asa_theme", next);
+      applyTheme(next);
+    }
+
+    function initTheme(){
+      const saved = localStorage.getItem("asa_theme");
+      const preferred = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light";
+      applyTheme(saved || preferred);
+    }
+
+    // ---------------- AUTH ----------------
+    function setAuthMode(mode){
+      authMode = mode;
+      const login = mode === "login";
+
+      document.getElementById("loginTab").classList.toggle("active", login);
+      document.getElementById("signupTab").classList.toggle("active", !login);
+      document.getElementById("nameField").classList.toggle("hidden", login);
+      document.getElementById("confirmPasswordField").classList.toggle("hidden", login);
+
+      document.getElementById("authTitle").textContent = login ? "Admin login." : "Daftar member.";
+      document.getElementById("authSubmit").textContent = login ? "Login Admin" : "Buat Akun Member";
+      document.getElementById("authPassword").autocomplete = login ? "current-password" : "new-password";
+
+      clearAuthMessage();
+    }
+
+    function showAuthMessage(message, type="error"){
+      const el = document.getElementById("authMessage");
+      el.textContent = message;
+      el.className = `auth-message show ${type}`;
+    }
+
+    function clearAuthMessage(){
+      const el = document.getElementById("authMessage");
+      el.textContent = "";
+      el.className = "auth-message";
+    }
+
+    document.getElementById("authForm").addEventListener("submit", async (e)=>{
+      e.preventDefault();
+      clearAuthMessage();
+
+      const email = document.getElementById("authEmail").value.trim();
+      const password = document.getElementById("authPassword").value;
+      const name = document.getElementById("adminName").value.trim();
+      const confirm = document.getElementById("authPasswordConfirm").value;
+      const btn = document.getElementById("authSubmit");
+
+      btn.disabled = true;
+      btn.textContent = authMode === "login" ? "Signing in..." : "Creating account...";
+
+      try{
+        if(authMode === "signup"){
+          if(!name) throw new Error("Nama member wajib diisi.");
+          if(password !== confirm) throw new Error("Password dan ulangi password tidak sama.");
+
+          const { data, error } = await sb.auth.signUp({
+            email,
+            password,
+            options: {
+              data: {
+                display_name: name,
+                account_type: "member"
+              }
+            }
+          });
+          if(error) throw error;
+
+          // Jika email confirmation dimatikan, Supabase bisa langsung membuat session.
+          // Member tetap tidak boleh masuk dashboard admin, jadi session langsung ditutup.
+          if(data.session){
+            await sb.auth.signOut();
+          }
+
+          showAuthMessage(
+            "Akun member berhasil dibuat. Akun ini tidak memiliki akses ke dashboard admin.",
+            "success"
+          );
+          document.getElementById("authForm").reset();
+        }else{
+          const { data, error } = await sb.auth.signInWithPassword({ email, password });
+          if(error) throw error;
+          await handleSignedIn(data.user);
+        }
+      }catch(err){
+        showAuthMessage(translateAuthError(err?.message || "Terjadi kesalahan."));
+      }finally{
+        btn.disabled = false;
+        btn.textContent = authMode === "login" ? "Login Admin" : "Buat Akun Member";
+      }
+    });
+
+    function translateAuthError(message){
+      const m = String(message).toLowerCase();
+      if(m.includes("invalid login credentials")) return "Email atau password salah.";
+      if(m.includes("email not confirmed")) return "Email belum dikonfirmasi. Silakan cek inbox email admin.";
+      if(m.includes("user already registered")) return "Email tersebut sudah terdaftar. Silakan login.";
+      if(m.includes("password should be")) return "Password terlalu pendek. Gunakan minimal 6 karakter.";
+      if(m.includes("rate limit")) return "Terlalu banyak percobaan. Coba beberapa saat lagi.";
+      return message;
+    }
+
+    async function handleSignedIn(user){
+      if(!user) return;
+
+      const { data: profile, error: profileError } = await sb
+        .from("profiles")
+        .select("role, full_name, email")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if(profileError){
+        await sb.auth.signOut();
+        showAuthMessage("Gagal memeriksa role akun: " + profileError.message);
+        return;
+      }
+
+      if(!profile || profile.role !== "admin"){
+        await sb.auth.signOut();
+        currentUser = null;
+        document.getElementById("appShell").classList.add("hidden");
+        document.getElementById("authScreen").classList.remove("hidden");
+        showAuthMessage("Akun ini adalah akun member dan tidak memiliki akses ke dashboard admin.");
+        return;
+      }
+
+      currentUser = user;
+      document.getElementById("authScreen").classList.add("hidden");
+      document.getElementById("appShell").classList.remove("hidden");
+
+      const name = profile.full_name || user?.user_metadata?.display_name || "Admin ASA";
+      document.getElementById("adminIdentity").textContent = `${name} · ${user?.email || ""}`;
+
+      await loadAllData();
+    }
+
+    async function logout(){
+      await sb.auth.signOut();
+      currentUser = null;
+      db = {members:[],bookings:[],reviews:[]};
+      document.getElementById("appShell").classList.add("hidden");
+      document.getElementById("authScreen").classList.remove("hidden");
+      document.getElementById("authPassword").value = "";
+      setAuthMode("login");
+    }
+
+    sb.auth.onAuthStateChange(async (event, session)=>{
+      if(event === "SIGNED_OUT"){
+        currentUser = null;
+      }
+      if(event === "SIGNED_IN" && session?.user && !currentUser){
+        await handleSignedIn(session.user);
+      }
+    });
+
+    async function init(){
+      const { data: { session } } = await sb.auth.getSession();
+      if(session?.user){
+        await handleSignedIn(session.user);
+      }else{
+        document.getElementById("authScreen").classList.remove("hidden");
+      }
+    }
+
+    // ---------------- DATA ----------------
+    async function loadAllData(){
+      showLoading();
+
+      const [membersRes, bookingsRes, reviewsRes] = await Promise.all([
+        sb.from("members").select("*").order("created_at",{ascending:false}),
+        sb.from("bookings").select("*").order("booking_date",{ascending:false}).order("booking_time",{ascending:false}),
+        sb.from("reviews").select("*").order("review_date",{ascending:false})
+      ]);
+
+      const errors = [membersRes.error, bookingsRes.error, reviewsRes.error].filter(Boolean);
+      if(errors.length){
+        console.error(errors);
+        showDataError(errors[0].message);
+        return;
+      }
+
+      db.members = membersRes.data || [];
+      db.bookings = bookingsRes.data || [];
+      db.reviews = reviewsRes.data || [];
+
       renderAll();
+    }
+
+    function showLoading(){
+      document.getElementById("bookingList").innerHTML = `<div class="loading">Memuat booking...</div>`;
+      document.getElementById("reviewList").innerHTML = `<div class="loading">Memuat review...</div>`;
+      document.getElementById("memberList").innerHTML = `<div class="loading">Memuat member...</div>`;
+    }
+
+    function showDataError(message){
+      const html = `<div class="error-box">Gagal mengambil data dari Supabase:<br>${escapeHtml(message)}</div>`;
+      document.getElementById("bookingList").innerHTML = html;
+      document.getElementById("reviewList").innerHTML = html;
+      document.getElementById("memberList").innerHTML = html;
     }
 
     function initials(name){
@@ -434,47 +794,55 @@
 
     function renderBookings(){
       const list = document.getElementById("bookingList");
-      const rows = db.bookings
-        .filter(b=>bookingFilter==="all" || b.type===bookingFilter)
-        .sort((a,b)=> (b.date+b.time).localeCompare(a.date+a.time));
+      const rows = db.bookings.filter(b=>bookingFilter==="all" || b.type===bookingFilter);
 
       if(!rows.length){
         list.innerHTML = `<div class="empty"><div class="emoji">🎾</div>Belum ada booking untuk kategori ini.</div>`;
         return;
       }
-      list.innerHTML = rows.map(b=>`
-        <div class="list-card">
-          <div class="list-top">
-            <div class="initial">${initials(memberName(b.memberId))}</div>
-            <div class="grow">
-              <h4>${escapeHtml(memberName(b.memberId))}</h4>
-              <div class="sub">${escapeHtml(b.type)}</div>
+
+      list.innerHTML = rows.map(b=>{
+        const badgeClass = b.status==="Completed" ? "dark" : (b.status==="Cancelled" ? "danger" : "");
+        return `
+          <div class="list-card">
+            <div class="list-top">
+              <div class="initial">${initials(memberName(b.member_id))}</div>
+              <div class="grow">
+                <h4>${escapeHtml(memberName(b.member_id))}</h4>
+                <div class="sub">${escapeHtml(b.type)}</div>
+              </div>
+              <span class="badge ${badgeClass}">${escapeHtml(b.status)}</span>
             </div>
-            <span class="badge ${b.status==="Completed"?"dark":""}">${escapeHtml(b.status)}</span>
+            <div class="meta-row">
+              <span>📅 ${formatDate(b.booking_date)}</span>
+              <span>🕒 ${escapeHtml(String(b.booking_time || "").slice(0,5))}</span>
+              <span>🎾 ${escapeHtml(b.coach || "Coach ASA")}</span>
+            </div>
+            <div class="member-actions">
+              <button class="mini-btn" onclick="toggleBookingStatus('${b.id}','${b.status}')">
+                ${b.status==="Completed" ? "Set Booked" : "Mark Completed"}
+              </button>
+              <button class="mini-btn danger" onclick="deleteBooking('${b.id}')">Hapus</button>
+            </div>
           </div>
-          <div class="meta-row">
-            <span>📅 ${formatDate(b.date)}</span>
-            <span>🕒 ${escapeHtml(b.time)}</span>
-            <span>🎾 ${escapeHtml(b.coach || "Coach ASA")}</span>
-          </div>
-        </div>
-      `).join("");
+        `;
+      }).join("");
     }
 
     function renderReviews(){
       const list = document.getElementById("reviewList");
-      const rows = [...db.reviews].sort((a,b)=>b.date.localeCompare(a.date));
-      if(!rows.length){
+      if(!db.reviews.length){
         list.innerHTML = `<div class="empty"><div class="emoji">⭐</div>Belum ada review coaching.</div>`;
         return;
       }
-      list.innerHTML = rows.map(r=>`
+
+      list.innerHTML = db.reviews.map(r=>`
         <div class="list-card">
           <div class="list-top">
-            <div class="initial">${initials(memberName(r.memberId))}</div>
+            <div class="initial">${initials(memberName(r.member_id))}</div>
             <div class="grow">
-              <h4>${escapeHtml(memberName(r.memberId))}</h4>
-              <div class="sub">${formatDate(r.date)} · ${escapeHtml(r.session || "Coaching")}</div>
+              <h4>${escapeHtml(memberName(r.member_id))}</h4>
+              <div class="sub">${formatDate(r.review_date)} · ${escapeHtml(r.session || "Coaching")}</div>
             </div>
             <span class="badge">${escapeHtml(r.focus)}</span>
           </div>
@@ -483,6 +851,9 @@
             <div class="tiny">${r.rating}/5 Progress Score</div>
           </div>
           <div class="review-note">${escapeHtml(r.note)}</div>
+          <div class="member-actions">
+            <button class="mini-btn danger" onclick="deleteReview('${r.id}')">Hapus Review</button>
+          </div>
         </div>
       `).join("");
     }
@@ -490,36 +861,39 @@
     function renderMembers(){
       const q = document.getElementById("memberSearch")?.value.toLowerCase().trim() || "";
       const list = document.getElementById("memberList");
-      const rows = db.members.filter(m=>(m.name+" "+m.phone).toLowerCase().includes(q));
+      const rows = db.members.filter(m=>(`${m.name} ${m.phone} ${m.email||""}`).toLowerCase().includes(q));
+
       if(!rows.length){
         list.innerHTML = `<div class="empty"><div class="emoji">👤</div>Belum ada member yang ditemukan.</div>`;
         return;
       }
+
       list.innerHTML = rows.map(m=>{
-        const sessions = db.bookings.filter(b=>b.memberId===m.id).length;
-        const reviews = db.reviews.filter(r=>r.memberId===m.id).length;
+        const sessions = db.bookings.filter(b=>b.member_id===m.id).length;
+        const reviews = db.reviews.filter(r=>r.member_id===m.id).length;
         return `
-        <div class="list-card member-card">
-          <div class="list-top">
-            <div class="initial">${initials(m.name)}</div>
-            <div class="grow">
-              <h4>${escapeHtml(m.name)}</h4>
-              <div class="sub">${escapeHtml(m.phone)} · Join ${formatDate(m.joined)}</div>
+          <div class="list-card member-card">
+            <div class="list-top">
+              <div class="initial">${initials(m.name)}</div>
+              <div class="grow">
+                <h4>${escapeHtml(m.name)}</h4>
+                <div class="sub">${escapeHtml(m.phone)} · Join ${formatDate(m.joined)}</div>
+              </div>
+              <span class="badge dark">${escapeHtml(m.level)}</span>
             </div>
-            <span class="badge dark">${escapeHtml(m.level)}</span>
+            <div class="meta-row">
+              <span>${sessions} booking</span>
+              <span>${reviews} review</span>
+              <span>${escapeHtml(m.email || "No email")}</span>
+            </div>
+            <div class="member-actions">
+              <button class="mini-btn" onclick="openMember('${m.id}')">Edit</button>
+              <button class="mini-btn" onclick="openBooking(null,'${m.id}')">Booking</button>
+              <button class="mini-btn" onclick="openReview('${m.id}')">Review</button>
+              <button class="mini-btn danger" onclick="deleteMember('${m.id}')">Hapus</button>
+            </div>
           </div>
-          <div class="meta-row">
-            <span>${sessions} booking</span>
-            <span>${reviews} review</span>
-            <span>${escapeHtml(m.email || "No email")}</span>
-          </div>
-          <div class="member-actions">
-            <button class="mini-btn" onclick="openMember('${m.id}')">Edit</button>
-            <button class="mini-btn" onclick="openBooking(null,'${m.id}')">Booking</button>
-            <button class="mini-btn" onclick="openReview('${m.id}')">Review</button>
-            <button class="mini-btn danger" onclick="deleteMember('${m.id}')">Hapus</button>
-          </div>
-        </div>`;
+        `;
       }).join("");
     }
 
@@ -530,6 +904,7 @@
       renderMembers();
     }
 
+    // ---------------- NAV ----------------
     document.querySelectorAll(".nav-btn").forEach(btn=>{
       btn.addEventListener("click",()=>{
         document.querySelectorAll(".nav-btn").forEach(x=>x.classList.remove("active"));
@@ -557,6 +932,7 @@
       if(activePage==="memberPage") openMember();
     }
 
+    // ---------------- MODAL ----------------
     function showModal(title, html){
       document.getElementById("modalTitle").textContent = title;
       document.getElementById("modalBody").innerHTML = html;
@@ -577,21 +953,24 @@
       return db.members.map(m=>`<option value="${m.id}" ${m.id===selected?"selected":""}>${escapeHtml(m.name)}</option>`).join("");
     }
 
+    // ---------------- BOOKINGS ----------------
     function openBooking(type="", preselectedMember=""){
       if(!db.members.length){
         showModal("Booking Session", `
           <div class="empty"><div class="emoji">👤</div>Tambahkan member terlebih dahulu sebelum membuat booking.</div>
           <div style="height:12px"></div>
-          <button class="primary-btn lime" style="width:100%" onclick="closeModal();setTimeout(()=>openMember(),80)">Tambah Member</button>
+          <button class="primary-btn lime" onclick="closeModal();setTimeout(()=>openMember(),80)">Tambah Member</button>
         `);
         return;
       }
+
       showModal("Tambah Booking", `
         <form class="form" onsubmit="saveBooking(event)">
           <div class="field">
             <label>MEMBER</label>
-            <select name="memberId" required>${memberOptions(preselectedMember)}</select>
+            <select name="member_id" required>${memberOptions(preselectedMember)}</select>
           </div>
+
           <div class="field">
             <label>PROGRAM</label>
             <select name="type" required>
@@ -600,108 +979,252 @@
               <option ${type==="Package 8 Session"?"selected":""}>Package 8 Session</option>
             </select>
           </div>
+
           <div class="two-col">
-            <div class="field"><label>TANGGAL</label><input type="date" name="date" required /></div>
-            <div class="field"><label>JAM</label><input type="time" name="time" required /></div>
+            <div class="field"><label>TANGGAL</label><input type="date" name="booking_date" required /></div>
+            <div class="field"><label>JAM</label><input type="time" name="booking_time" required /></div>
           </div>
+
           <div class="field"><label>COACH</label><input name="coach" placeholder="Contoh: Coach Adi" /></div>
+
           <div class="field">
             <label>STATUS</label>
-            <select name="status"><option>Booked</option><option>Completed</option><option>Cancelled</option></select>
+            <select name="status">
+              <option>Booked</option>
+              <option>Completed</option>
+              <option>Cancelled</option>
+            </select>
           </div>
+
           <button class="primary-btn" type="submit">Simpan Booking</button>
         </form>
       `);
     }
 
-    function saveBooking(e){
+    async function saveBooking(e){
       e.preventDefault();
+      const btn = e.target.querySelector("button[type=submit]");
+      btn.disabled = true;
+      btn.textContent = "Menyimpan...";
+
       const f = Object.fromEntries(new FormData(e.target).entries());
-      db.bookings.push({id:crypto.randomUUID(),...f});
-      saveDB(); closeModal();
+
+      const { error } = await sb.from("bookings").insert({
+        member_id: f.member_id,
+        type: f.type,
+        booking_date: f.booking_date,
+        booking_time: f.booking_time,
+        coach: f.coach || null,
+        status: f.status
+      });
+
+      if(error){
+        alert("Gagal menyimpan booking: " + error.message);
+        btn.disabled = false;
+        btn.textContent = "Simpan Booking";
+        return;
+      }
+
+      closeModal();
+      await loadAllData();
     }
 
+    async function toggleBookingStatus(id,currentStatus){
+      const next = currentStatus === "Completed" ? "Booked" : "Completed";
+      const { error } = await sb.from("bookings").update({status:next}).eq("id",id);
+      if(error) return alert("Gagal mengubah status: " + error.message);
+      await loadAllData();
+    }
+
+    async function deleteBooking(id){
+      if(!confirm("Hapus booking ini?")) return;
+      const { error } = await sb.from("bookings").delete().eq("id",id);
+      if(error) return alert("Gagal menghapus booking: " + error.message);
+      await loadAllData();
+    }
+
+    // ---------------- REVIEWS ----------------
     function openReview(preselectedMember=""){
       if(!db.members.length){
         showModal("Tambah Review", `<div class="empty"><div class="emoji">⭐</div>Tambahkan member terlebih dahulu.</div>`);
         return;
       }
+
       showModal("Tambah Review Coaching", `
         <form class="form" onsubmit="saveReview(event)">
-          <div class="field"><label>MEMBER</label><select name="memberId" required>${memberOptions(preselectedMember)}</select></div>
+          <div class="field"><label>MEMBER</label><select name="member_id" required>${memberOptions(preselectedMember)}</select></div>
+
           <div class="two-col">
-            <div class="field"><label>TANGGAL</label><input type="date" name="date" required /></div>
+            <div class="field"><label>TANGGAL</label><input type="date" name="review_date" required /></div>
             <div class="field"><label>RATING</label>
-              <select name="rating"><option value="5">5 / 5</option><option value="4">4 / 5</option><option value="3">3 / 5</option><option value="2">2 / 5</option><option value="1">1 / 5</option></select>
+              <select name="rating">
+                <option value="5">5 / 5</option>
+                <option value="4">4 / 5</option>
+                <option value="3">3 / 5</option>
+                <option value="2">2 / 5</option>
+                <option value="1">1 / 5</option>
+              </select>
             </div>
           </div>
+
           <div class="field"><label>SESSION</label>
-            <select name="session"><option>Single Session</option><option>Package 4 Session</option><option>Package 8 Session</option></select>
+            <select name="session">
+              <option>Single Session</option>
+              <option>Package 4 Session</option>
+              <option>Package 8 Session</option>
+            </select>
           </div>
+
           <div class="field"><label>FOCUS</label>
-            <select name="focus"><option>Technique</option><option>Footwork</option><option>Consistency</option><option>Strategy</option><option>Fitness</option></select>
+            <select name="focus">
+              <option>Technique</option>
+              <option>Footwork</option>
+              <option>Consistency</option>
+              <option>Strategy</option>
+              <option>Fitness</option>
+            </select>
           </div>
-          <div class="field"><label>CATATAN COACH</label><textarea name="note" required placeholder="Contoh: Forehand lebih stabil, berikutnya fokus positioning dan lob..."></textarea></div>
+
+          <div class="field"><label>CATATAN COACH</label>
+            <textarea name="note" required placeholder="Contoh: Forehand lebih stabil, berikutnya fokus positioning dan lob..."></textarea>
+          </div>
+
           <button class="primary-btn" type="submit">Simpan Review</button>
         </form>
       `);
     }
 
-    function saveReview(e){
+    async function saveReview(e){
       e.preventDefault();
+      const btn = e.target.querySelector("button[type=submit]");
+      btn.disabled = true;
+      btn.textContent = "Menyimpan...";
+
       const f = Object.fromEntries(new FormData(e.target).entries());
-      db.reviews.push({id:crypto.randomUUID(),...f});
-      saveDB(); closeModal();
+
+      const { error } = await sb.from("reviews").insert({
+        member_id: f.member_id,
+        review_date: f.review_date,
+        rating: Number(f.rating),
+        session: f.session,
+        focus: f.focus,
+        note: f.note
+      });
+
+      if(error){
+        alert("Gagal menyimpan review: " + error.message);
+        btn.disabled = false;
+        btn.textContent = "Simpan Review";
+        return;
+      }
+
+      closeModal();
+      await loadAllData();
     }
 
+    async function deleteReview(id){
+      if(!confirm("Hapus review ini?")) return;
+      const { error } = await sb.from("reviews").delete().eq("id",id);
+      if(error) return alert("Gagal menghapus review: " + error.message);
+      await loadAllData();
+    }
+
+    // ---------------- MEMBERS ----------------
     function openMember(id=null){
       const m = id ? db.members.find(x=>x.id===id) : null;
       editingMemberId = m?.id || null;
+
       showModal(m ? "Edit Member" : "Tambah Member", `
         <form class="form" onsubmit="saveMember(event)">
-          <div class="field"><label>NAMA LENGKAP</label><input name="name" required value="${attr(m?.name || "")}" placeholder="Nama murid" /></div>
-          <div class="field"><label>WHATSAPP</label><input name="phone" required value="${attr(m?.phone || "")}" placeholder="08xx xxxx xxxx" /></div>
-          <div class="field"><label>EMAIL</label><input type="email" name="email" value="${attr(m?.email || "")}" placeholder="email@example.com" /></div>
+          <div class="field"><label>NAMA LENGKAP</label>
+            <input name="name" required value="${attr(m?.name || "")}" placeholder="Nama murid" />
+          </div>
+
+          <div class="field"><label>WHATSAPP</label>
+            <input name="phone" required value="${attr(m?.phone || "")}" placeholder="08xx xxxx xxxx" />
+          </div>
+
+          <div class="field"><label>EMAIL</label>
+            <input type="email" name="email" value="${attr(m?.email || "")}" placeholder="email@example.com" />
+          </div>
+
           <div class="two-col">
             <div class="field"><label>LEVEL</label>
               <select name="level">
                 ${["Beginner","Intermediate","Advanced"].map(x=>`<option ${m?.level===x?"selected":""}>${x}</option>`).join("")}
               </select>
             </div>
-            <div class="field"><label>TANGGAL JOIN</label><input type="date" name="joined" required value="${attr(m?.joined || new Date().toISOString().slice(0,10))}" /></div>
+
+            <div class="field"><label>TANGGAL JOIN</label>
+              <input type="date" name="joined" required value="${attr(m?.joined || new Date().toISOString().slice(0,10))}" />
+            </div>
           </div>
+
           <button class="primary-btn" type="submit">${m ? "Simpan Perubahan" : "Tambah Member"}</button>
         </form>
       `);
     }
 
-    function saveMember(e){
+    async function saveMember(e){
       e.preventDefault();
+      const btn = e.target.querySelector("button[type=submit]");
+      btn.disabled = true;
+      btn.textContent = "Menyimpan...";
+
       const f = Object.fromEntries(new FormData(e.target).entries());
+      const payload = {
+        name: f.name,
+        phone: f.phone,
+        email: f.email || null,
+        level: f.level,
+        joined: f.joined
+      };
+
+      let result;
       if(editingMemberId){
-        const i = db.members.findIndex(x=>x.id===editingMemberId);
-        db.members[i] = {...db.members[i],...f};
+        result = await sb.from("members").update(payload).eq("id",editingMemberId);
       }else{
-        db.members.push({id:crypto.randomUUID(),...f});
+        result = await sb.from("members").insert(payload);
       }
-      saveDB(); closeModal();
+
+      if(result.error){
+        alert("Gagal menyimpan member: " + result.error.message);
+        btn.disabled = false;
+        btn.textContent = editingMemberId ? "Simpan Perubahan" : "Tambah Member";
+        return;
+      }
+
+      closeModal();
+      await loadAllData();
     }
 
-    function deleteMember(id){
+    async function deleteMember(id){
       const m = db.members.find(x=>x.id===id);
       if(!m) return;
-      if(confirm(`Hapus member ${m.name}? Booking dan review yang terkait tidak akan ikut terhapus.`)){
-        db.members = db.members.filter(x=>x.id!==id);
-        saveDB();
-      }
+
+      if(!confirm(`Hapus member ${m.name}? Booking dan review milik member ini juga akan ikut terhapus.`)) return;
+
+      const { error } = await sb.from("members").delete().eq("id",id);
+      if(error) return alert("Gagal menghapus member: " + error.message);
+
+      await loadAllData();
     }
 
+    // ---------------- HELPERS ----------------
     function escapeHtml(v=""){
-      return String(v).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[c]));
+      return String(v).replace(/[&<>"']/g, c=>({
+        "&":"&amp;",
+        "<":"&lt;",
+        ">":"&gt;",
+        "\"":"&quot;",
+        "'":"&#039;"
+      }[c]));
     }
+
     function attr(v=""){ return escapeHtml(v); }
 
-    renderAll();
+    initTheme();
+    init();
   </script>
 </body>
 </html>
