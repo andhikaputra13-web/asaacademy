@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#111814" />
+  <title>ASA Academy — Admin</title>
+  <style>
+    :root{
+      --bg:#f3f4f0;
+      --card:#ffffff;
+      --text:#111814;
+      --muted:#747b77;
+      --line:#e4e7e1;
+      --brand:#c7f36d;
+      --brand-dark:#8fc936;
+      --dark:#111814;
+      --danger:#d64b4b;
+      --warning:#e9ae3d;
+      --shadow:0 12px 30px rgba(17,24,20,.08);
+      --radius:22px;
+    }
+
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      font-family:Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top right, rgba(199,243,109,.25), transparent 35%),
+        var(--bg);
+      color:var(--text);
+      min-height:100vh;
+    }
+    button,input,select,textarea{font:inherit}
+    button{cursor:pointer}
+    .app{
+      width:min(100%, 520px);
+      margin:0 auto;
+      min-height:100vh;
+      padding:18px 16px 108px;
+    }
+
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:18px;
+    }
+    .brand-wrap{display:flex;align-items:center;gap:11px}
+    .logo{
+      width:46px;height:46px;border-radius:15px;
+      background:var(--dark);
+      color:var(--brand);
+      display:grid;place-items:center;
+      font-weight:900;letter-spacing:-1px;
+      box-shadow:var(--shadow);
+    }
+    .brand-title{font-weight:900;font-size:17px;line-height:1.1}
+    .brand-sub{font-size:12px;color:var(--muted);margin-top:3px}
+    .avatar{
+      border:0;background:#fff;width:42px;height:42px;border-radius:50%;
+      box-shadow:0 5px 18px rgba(0,0,0,.06);font-weight:800
+    }
+
+    .hero{
+      background:var(--dark);
+      color:#fff;
+      border-radius:28px;
+      padding:20px;
+      overflow:hidden;
+      position:relative;
+      margin-bottom:18px;
+      box-shadow:0 16px 36px rgba(17,24,20,.18);
+    }
+    .hero:after{
+      content:"";
+      position:absolute;
+      width:150px;height:150px;border-radius:50%;
+      background:var(--brand);
+      right:-65px;top:-68px;opacity:.95
+    }
+    .hero-label{color:#bac1bd;font-size:12px;text-transform:uppercase;letter-spacing:.12em}
+    .hero h1{font-size:26px;margin:8px 0 6px;line-height:1.06;letter-spacing:-.04em}
+    .hero p{font-size:13px;color:#cfd5d1;margin:0;max-width:75%;line-height:1.5}
+    .stats{
+      display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:18px
+    }
+    .stat{
+      padding:11px 10px;border:1px solid rgba(255,255,255,.11);
+      background:rgba(255,255,255,.06);border-radius:16px
+    }
+    .stat strong{display:block;font-size:18px}
+    .stat span{font-size:10px;color:#bfc5c1}
+
+    .page{display:none;animation:fade .18s ease}
+    .page.active{display:block}
+    @keyframes fade{from{opacity:.5;transform:translateY(5px)}to{opacity:1;transform:none}}
+
+    .section-head{
+      display:flex;justify-content:space-between;align-items:end;
+      gap:12px;margin:18px 2px 11px
+    }
+    .section-head h2{font-size:20px;margin:0;letter-spacing:-.025em}
+    .section-head p{margin:3px 0 0;font-size:12px;color:var(--muted)}
+    .text-btn{
+      border:0;background:transparent;color:var(--dark);font-weight:800;font-size:12px
+    }
+
+    .session-grid{
+      display:grid;gap:11px;
+    }
+    .session-card{
+      background:var(--card);border:1px solid var(--line);
+      border-radius:var(--radius);padding:16px;
+      display:flex;align-items:center;gap:14px;
+      box-shadow:0 8px 22px rgba(17,24,20,.045);
+      transition:.2s ease;
+    }
+    .session-card:active{transform:scale(.99)}
+    .session-icon{
+      width:52px;height:52px;border-radius:17px;display:grid;place-items:center;
+      background:#f1f4ea;font-size:22px;flex:0 0 auto
+    }
+    .session-card h3{margin:0 0 5px;font-size:15px}
+    .session-card p{margin:0;color:var(--muted);font-size:11px}
+    .session-card .price{margin-left:auto;text-align:right}
+    .session-card .price strong{display:block;font-size:14px}
+    .session-card .price span{font-size:10px;color:var(--muted)}
+    .session-card.featured{
+      background:linear-gradient(135deg,#d6ff88,#c4ee6c);
+      border-color:#bce75e;
+    }
+    .session-card.featured .session-icon{background:rgba(17,24,20,.09)}
+
+    .filter-row{
+      display:flex;gap:8px;overflow:auto;padding-bottom:3px;scrollbar-width:none
+    }
+    .filter-row::-webkit-scrollbar{display:none}
+    .chip{
+      white-space:nowrap;border:1px solid var(--line);background:#fff;
+      padding:9px 12px;border-radius:999px;font-size:11px;font-weight:750;color:#515854
+    }
+    .chip.active{background:var(--dark);border-color:var(--dark);color:#fff}
+
+    .list{display:grid;gap:10px}
+    .list-card{
+      background:#fff;border:1px solid var(--line);border-radius:20px;padding:14px;
+      box-shadow:0 7px 18px rgba(17,24,20,.035);
+    }
+    .list-top{display:flex;gap:10px;align-items:center}
+    .initial{
+      width:39px;height:39px;border-radius:13px;background:#edf0eb;
+      display:grid;place-items:center;font-weight:900;font-size:13px
+    }
+    .grow{flex:1;min-width:0}
+    .list-card h4{margin:0;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .sub{font-size:10.5px;color:var(--muted);margin-top:3px}
+    .badge{
+      font-size:9px;font-weight:850;padding:6px 8px;border-radius:999px;
+      background:#eef6dc;color:#587d1d;white-space:nowrap
+    }
+    .badge.dark{background:#eef0ef;color:#343a36}
+    .badge.warn{background:#fff2da;color:#9a6616}
+    .meta-row{
+      margin-top:11px;padding-top:10px;border-top:1px dashed var(--line);
+      display:flex;justify-content:space-between;gap:9px;color:#68706b;font-size:10px
+    }
+
+    .review-score{
+      display:flex;align-items:center;gap:10px;margin-top:11px
+    }
+    .stars{letter-spacing:1px;color:#e5a913;font-size:14px}
+    .review-note{
+      margin:9px 0 0;padding:10px 11px;background:#f7f8f5;border-radius:13px;
+      font-size:11px;line-height:1.5;color:#4c544f
+    }
+
+    .member-card .member-actions{
+      display:flex;gap:6px;margin-top:11px
+    }
+    .mini-btn{
+      border:1px solid var(--line);background:#fff;padding:7px 10px;border-radius:10px;
+      font-size:10px;font-weight:800
+    }
+    .mini-btn.danger{color:var(--danger)}
+
+    .empty{
+      text-align:center;padding:32px 20px;background:#fff;border:1px dashed #d6dad4;
+      border-radius:22px;color:var(--muted);font-size:12px
+    }
+    .empty .emoji{font-size:30px;margin-bottom:7px}
+
+    .fab{
+      position:fixed;right:max(18px, calc((100vw - 520px)/2 + 18px));
+      bottom:86px;width:54px;height:54px;border-radius:18px;border:0;
+      background:var(--brand);color:var(--dark);font-size:27px;font-weight:700;
+      box-shadow:0 14px 25px rgba(99,139,35,.32);z-index:20
+    }
+
+    .bottom-nav{
+      position:fixed;z-index:30;bottom:14px;left:50%;transform:translateX(-50%);
+      width:min(calc(100% - 28px), 492px);
+      padding:8px;background:rgba(17,24,20,.96);backdrop-filter:blur(14px);
+      border-radius:22px;display:grid;grid-template-columns:repeat(3,1fr);gap:4px;
+      box-shadow:0 18px 45px rgba(17,24,20,.32)
+    }
+    .nav-btn{
+      border:0;background:transparent;color:#8f9892;padding:9px 6px;
+      border-radius:16px;font-size:10px;font-weight:750
+    }
+    .nav-btn span{display:block;font-size:19px;margin-bottom:3px}
+    .nav-btn.active{background:var(--brand);color:var(--dark)}
+
+    .modal-backdrop{
+      position:fixed;inset:0;background:rgba(17,24,20,.45);display:none;
+      align-items:flex-end;justify-content:center;z-index:100;padding:0
+    }
+    .modal-backdrop.show{display:flex}
+    .sheet{
+      width:min(100%,520px);max-height:92vh;overflow:auto;background:#fff;
+      border-radius:28px 28px 0 0;padding:19px 16px 28px;
+      box-shadow:0 -20px 45px rgba(0,0,0,.18);animation:sheetup .22s ease
+    }
+    @keyframes sheetup{from{transform:translateY(35px);opacity:.7}to{transform:none;opacity:1}}
+    .sheet-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+    .sheet-head h3{margin:0;font-size:18px}
+    .close-btn{
+      border:0;background:#f0f2ef;width:34px;height:34px;border-radius:50%;font-size:19px
+    }
+    .form{display:grid;gap:12px}
+    .field label{display:block;font-size:10px;font-weight:850;margin:0 0 6px;color:#515854}
+    .field input,.field select,.field textarea{
+      width:100%;border:1px solid var(--line);border-radius:14px;padding:12px 13px;
+      background:#fbfcfa;color:var(--text);outline:none;font-size:13px
+    }
+    .field textarea{min-height:88px;resize:vertical}
+    .field input:focus,.field select:focus,.field textarea:focus{
+      border-color:#a9cf58;box-shadow:0 0 0 3px rgba(199,243,109,.25)
+    }
+    .two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .primary-btn{
+      border:0;background:var(--dark);color:#fff;border-radius:16px;padding:13px 15px;
+      font-weight:850;margin-top:3px
+    }
+    .primary-btn.lime{background:var(--brand);color:var(--dark)}
+    .hint{font-size:10px;color:var(--muted);margin-top:-4px}
+
+    .search{
+      display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);
+      border-radius:15px;padding:10px 12px;margin-bottom:10px
+    }
+    .search input{border:0;outline:none;width:100%;font-size:12px;background:transparent}
+    .tiny{font-size:10px;color:var(--muted)}
+
+    @media(min-width:700px){
+      body{padding:18px 0}
+      .app{background:rgba(255,255,255,.12);border-radius:36px}
+      .bottom-nav{bottom:24px}
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand-wrap">
+        <div class="logo">ASA</div>
+        <div>
+          <div class="brand-title">ASA Academy</div>
+          <div class="brand-sub">Padel Coaching Admin</div>
+        </div>
+      </div>
+      <button class="avatar" title="Admin">A</button>
+    </header>
+
+    <section class="hero">
+      <div class="hero-label">Admin Dashboard</div>
+      <h1>Manage your<br>academy sessions.</h1>
+      <p>Kelola booking, perkembangan murid, dan data member dalam satu dashboard mobile.</p>
+      <div class="stats">
+        <div class="stat"><strong id="statBookings">0</strong><span>Bookings</span></div>
+        <div class="stat"><strong id="statMembers">0</strong><span>Members</span></div>
+        <div class="stat"><strong id="statReviews">0</strong><span>Reviews</span></div>
+      </div>
+    </section>
+
+    <section id="bookingPage" class="page active">
+      <div class="section-head">
+        <div>
+          <h2>Booking Session</h2>
+          <p>Pilih program coaching ASA Academy.</p>
+        </div>
+      </div>
+
+      <div class="session-grid">
+        <button class="session-card" onclick="openBooking('Single Session')">
+          <div class="session-icon">🎾</div>
+          <div class="grow">
+            <h3>Single Session</h3>
+            <p>1x private / group coaching session</p>
+          </div>
+          <div class="price"><strong>1 Session</strong><span>Book now</span></div>
+        </button>
+
+        <button class="session-card featured" onclick="openBooking('Package 4 Session')">
+          <div class="session-icon">⚡</div>
+          <div class="grow">
+            <h3>Package 4 Session</h3>
+            <p>Program latihan rutin 4 pertemuan</p>
+          </div>
+          <div class="price"><strong>4 Sessions</strong><span>Popular</span></div>
+        </button>
+
+        <button class="session-card" onclick="openBooking('Package 8 Session')">
+          <div class="session-icon">🏆</div>
+          <div class="grow">
+            <h3>Package 8 Session</h3>
+            <p>Program intensif untuk progress maksimal</p>
+          </div>
+          <div class="price"><strong>8 Sessions</strong><span>Best value</span></div>
+        </button>
+      </div>
+
+      <div class="section-head">
+        <div>
+          <h2>Recent Booking</h2>
+          <p>Jadwal coaching terbaru.</p>
+        </div>
+      </div>
+
+      <div class="filter-row" id="bookingFilters">
+        <button class="chip active" data-filter="all">Semua</button>
+        <button class="chip" data-filter="Single Session">Single</button>
+        <button class="chip" data-filter="Package 4 Session">4 Session</button>
+        <button class="chip" data-filter="Package 8 Session">8 Session</button>
+      </div>
+      <div style="height:10px"></div>
+      <div id="bookingList" class="list"></div>
+    </section>
+
+    <section id="reviewPage" class="page">
+      <div class="section-head">
+        <div>
+          <h2>Student Review</h2>
+          <p>Catat evaluasi setelah coaching.</p>
+        </div>
+        <button class="text-btn" onclick="openReview()">+ Tambah</button>
+      </div>
+      <div id="reviewList" class="list"></div>
+    </section>
+
+    <section id="memberPage" class="page">
+      <div class="section-head">
+        <div>
+          <h2>Members</h2>
+          <p>Database murid ASA Academy.</p>
+        </div>
+        <button class="text-btn" onclick="openMember()">+ Member</button>
+      </div>
+      <div class="search">
+        <span>⌕</span>
+        <input id="memberSearch" type="search" placeholder="Cari nama atau nomor WhatsApp..." />
+      </div>
+      <div id="memberList" class="list"></div>
+    </section>
+  </main>
+
+  <button class="fab" id="fab" onclick="fabAction()" aria-label="Tambah data">+</button>
+
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-page="bookingPage"><span>◉</span>Booking</button>
+    <button class="nav-btn" data-page="reviewPage"><span>★</span>Review</button>
+    <button class="nav-btn" data-page="memberPage"><span>♟</span>Member</button>
+  </nav>
+
+  <div class="modal-backdrop" id="modal">
+    <div class="sheet">
+      <div class="sheet-head">
+        <h3 id="modalTitle">Form</h3>
+        <button class="close-btn" onclick="closeModal()">×</button>
+      </div>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <script>
+    const KEY = "asa_academy_admin_v1";
+    let activePage = "bookingPage";
+    let bookingFilter = "all";
+    let editingMemberId = null;
+
+    const starter = {
+      members: [
+        {id: crypto.randomUUID(), name:"Raka Pratama", phone:"0812 3456 7890", level:"Beginner", joined:"2026-08-01"},
+        {id: crypto.randomUUID(), name:"Nadia Putri", phone:"0813 7700 2198", level:"Intermediate", joined:"2026-08-03"}
+      ],
+      bookings: [],
+      reviews: []
+    };
+
+    let db = loadDB();
+
+    function loadDB(){
+      try{
+        const saved = localStorage.getItem(KEY);
+        return saved ? JSON.parse(saved) : starter;
+      }catch(e){ return starter; }
+    }
+
+    function saveDB(){
+      localStorage.setItem(KEY, JSON.stringify(db));
+      renderAll();
+    }
+
+    function initials(name){
+      return (name || "?").split(" ").slice(0,2).map(x=>x[0]).join("").toUpperCase();
+    }
+
+    function formatDate(v){
+      if(!v) return "-";
+      return new Date(v + "T00:00:00").toLocaleDateString("id-ID",{day:"2-digit",month:"short",year:"numeric"});
+    }
+
+    function memberName(id){
+      return db.members.find(m=>m.id===id)?.name || "Member dihapus";
+    }
+
+    function renderStats(){
+      document.getElementById("statBookings").textContent = db.bookings.length;
+      document.getElementById("statMembers").textContent = db.members.length;
+      document.getElementById("statReviews").textContent = db.reviews.length;
+    }
+
+    function renderBookings(){
+      const list = document.getElementById("bookingList");
+      const rows = db.bookings
+        .filter(b=>bookingFilter==="all" || b.type===bookingFilter)
+        .sort((a,b)=> (b.date+b.time).localeCompare(a.date+a.time));
+
+      if(!rows.length){
+        list.innerHTML = `<div class="empty"><div class="emoji">🎾</div>Belum ada booking untuk kategori ini.</div>`;
+        return;
+      }
+      list.innerHTML = rows.map(b=>`
+        <div class="list-card">
+          <div class="list-top">
+            <div class="initial">${initials(memberName(b.memberId))}</div>
+            <div class="grow">
+              <h4>${escapeHtml(memberName(b.memberId))}</h4>
+              <div class="sub">${escapeHtml(b.type)}</div>
+            </div>
+            <span class="badge ${b.status==="Completed"?"dark":""}">${escapeHtml(b.status)}</span>
+          </div>
+          <div class="meta-row">
+            <span>📅 ${formatDate(b.date)}</span>
+            <span>🕒 ${escapeHtml(b.time)}</span>
+            <span>🎾 ${escapeHtml(b.coach || "Coach ASA")}</span>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function renderReviews(){
+      const list = document.getElementById("reviewList");
+      const rows = [...db.reviews].sort((a,b)=>b.date.localeCompare(a.date));
+      if(!rows.length){
+        list.innerHTML = `<div class="empty"><div class="emoji">⭐</div>Belum ada review coaching.</div>`;
+        return;
+      }
+      list.innerHTML = rows.map(r=>`
+        <div class="list-card">
+          <div class="list-top">
+            <div class="initial">${initials(memberName(r.memberId))}</div>
+            <div class="grow">
+              <h4>${escapeHtml(memberName(r.memberId))}</h4>
+              <div class="sub">${formatDate(r.date)} · ${escapeHtml(r.session || "Coaching")}</div>
+            </div>
+            <span class="badge">${escapeHtml(r.focus)}</span>
+          </div>
+          <div class="review-score">
+            <div class="stars">${"★".repeat(Number(r.rating))}${"☆".repeat(5-Number(r.rating))}</div>
+            <div class="tiny">${r.rating}/5 Progress Score</div>
+          </div>
+          <div class="review-note">${escapeHtml(r.note)}</div>
+        </div>
+      `).join("");
+    }
+
+    function renderMembers(){
+      const q = document.getElementById("memberSearch")?.value.toLowerCase().trim() || "";
+      const list = document.getElementById("memberList");
+      const rows = db.members.filter(m=>(m.name+" "+m.phone).toLowerCase().includes(q));
+      if(!rows.length){
+        list.innerHTML = `<div class="empty"><div class="emoji">👤</div>Belum ada member yang ditemukan.</div>`;
+        return;
+      }
+      list.innerHTML = rows.map(m=>{
+        const sessions = db.bookings.filter(b=>b.memberId===m.id).length;
+        const reviews = db.reviews.filter(r=>r.memberId===m.id).length;
+        return `
+        <div class="list-card member-card">
+          <div class="list-top">
+            <div class="initial">${initials(m.name)}</div>
+            <div class="grow">
+              <h4>${escapeHtml(m.name)}</h4>
+              <div class="sub">${escapeHtml(m.phone)} · Join ${formatDate(m.joined)}</div>
+            </div>
+            <span class="badge dark">${escapeHtml(m.level)}</span>
+          </div>
+          <div class="meta-row">
+            <span>${sessions} booking</span>
+            <span>${reviews} review</span>
+            <span>${escapeHtml(m.email || "No email")}</span>
+          </div>
+          <div class="member-actions">
+            <button class="mini-btn" onclick="openMember('${m.id}')">Edit</button>
+            <button class="mini-btn" onclick="openBooking(null,'${m.id}')">Booking</button>
+            <button class="mini-btn" onclick="openReview('${m.id}')">Review</button>
+            <button class="mini-btn danger" onclick="deleteMember('${m.id}')">Hapus</button>
+          </div>
+        </div>`;
+      }).join("");
+    }
+
+    function renderAll(){
+      renderStats();
+      renderBookings();
+      renderReviews();
+      renderMembers();
+    }
+
+    document.querySelectorAll(".nav-btn").forEach(btn=>{
+      btn.addEventListener("click",()=>{
+        document.querySelectorAll(".nav-btn").forEach(x=>x.classList.remove("active"));
+        btn.classList.add("active");
+        document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
+        activePage = btn.dataset.page;
+        document.getElementById(activePage).classList.add("active");
+      });
+    });
+
+    document.querySelectorAll("#bookingFilters .chip").forEach(btn=>{
+      btn.addEventListener("click",()=>{
+        document.querySelectorAll("#bookingFilters .chip").forEach(x=>x.classList.remove("active"));
+        btn.classList.add("active");
+        bookingFilter = btn.dataset.filter;
+        renderBookings();
+      });
+    });
+
+    document.getElementById("memberSearch").addEventListener("input",renderMembers);
+
+    function fabAction(){
+      if(activePage==="bookingPage") openBooking();
+      if(activePage==="reviewPage") openReview();
+      if(activePage==="memberPage") openMember();
+    }
+
+    function showModal(title, html){
+      document.getElementById("modalTitle").textContent = title;
+      document.getElementById("modalBody").innerHTML = html;
+      document.getElementById("modal").classList.add("show");
+    }
+
+    function closeModal(){
+      document.getElementById("modal").classList.remove("show");
+      editingMemberId = null;
+    }
+
+    document.getElementById("modal").addEventListener("click",e=>{
+      if(e.target.id==="modal") closeModal();
+    });
+
+    function memberOptions(selected=""){
+      if(!db.members.length) return `<option value="">Belum ada member</option>`;
+      return db.members.map(m=>`<option value="${m.id}" ${m.id===selected?"selected":""}>${escapeHtml(m.name)}</option>`).join("");
+    }
+
+    function openBooking(type="", preselectedMember=""){
+      if(!db.members.length){
+        showModal("Booking Session", `
+          <div class="empty"><div class="emoji">👤</div>Tambahkan member terlebih dahulu sebelum membuat booking.</div>
+          <div style="height:12px"></div>
+          <button class="primary-btn lime" style="width:100%" onclick="closeModal();setTimeout(()=>openMember(),80)">Tambah Member</button>
+        `);
+        return;
+      }
+      showModal("Tambah Booking", `
+        <form class="form" onsubmit="saveBooking(event)">
+          <div class="field">
+            <label>MEMBER</label>
+            <select name="memberId" required>${memberOptions(preselectedMember)}</select>
+          </div>
+          <div class="field">
+            <label>PROGRAM</label>
+            <select name="type" required>
+              <option ${type==="Single Session"?"selected":""}>Single Session</option>
+              <option ${type==="Package 4 Session"?"selected":""}>Package 4 Session</option>
+              <option ${type==="Package 8 Session"?"selected":""}>Package 8 Session</option>
+            </select>
+          </div>
+          <div class="two-col">
+            <div class="field"><label>TANGGAL</label><input type="date" name="date" required /></div>
+            <div class="field"><label>JAM</label><input type="time" name="time" required /></div>
+          </div>
+          <div class="field"><label>COACH</label><input name="coach" placeholder="Contoh: Coach Adi" /></div>
+          <div class="field">
+            <label>STATUS</label>
+            <select name="status"><option>Booked</option><option>Completed</option><option>Cancelled</option></select>
+          </div>
+          <button class="primary-btn" type="submit">Simpan Booking</button>
+        </form>
+      `);
+    }
+
+    function saveBooking(e){
+      e.preventDefault();
+      const f = Object.fromEntries(new FormData(e.target).entries());
+      db.bookings.push({id:crypto.randomUUID(),...f});
+      saveDB(); closeModal();
+    }
+
+    function openReview(preselectedMember=""){
+      if(!db.members.length){
+        showModal("Tambah Review", `<div class="empty"><div class="emoji">⭐</div>Tambahkan member terlebih dahulu.</div>`);
+        return;
+      }
+      showModal("Tambah Review Coaching", `
+        <form class="form" onsubmit="saveReview(event)">
+          <div class="field"><label>MEMBER</label><select name="memberId" required>${memberOptions(preselectedMember)}</select></div>
+          <div class="two-col">
+            <div class="field"><label>TANGGAL</label><input type="date" name="date" required /></div>
+            <div class="field"><label>RATING</label>
+              <select name="rating"><option value="5">5 / 5</option><option value="4">4 / 5</option><option value="3">3 / 5</option><option value="2">2 / 5</option><option value="1">1 / 5</option></select>
+            </div>
+          </div>
+          <div class="field"><label>SESSION</label>
+            <select name="session"><option>Single Session</option><option>Package 4 Session</option><option>Package 8 Session</option></select>
+          </div>
+          <div class="field"><label>FOCUS</label>
+            <select name="focus"><option>Technique</option><option>Footwork</option><option>Consistency</option><option>Strategy</option><option>Fitness</option></select>
+          </div>
+          <div class="field"><label>CATATAN COACH</label><textarea name="note" required placeholder="Contoh: Forehand lebih stabil, berikutnya fokus positioning dan lob..."></textarea></div>
+          <button class="primary-btn" type="submit">Simpan Review</button>
+        </form>
+      `);
+    }
+
+    function saveReview(e){
+      e.preventDefault();
+      const f = Object.fromEntries(new FormData(e.target).entries());
+      db.reviews.push({id:crypto.randomUUID(),...f});
+      saveDB(); closeModal();
+    }
+
+    function openMember(id=null){
+      const m = id ? db.members.find(x=>x.id===id) : null;
+      editingMemberId = m?.id || null;
+      showModal(m ? "Edit Member" : "Tambah Member", `
+        <form class="form" onsubmit="saveMember(event)">
+          <div class="field"><label>NAMA LENGKAP</label><input name="name" required value="${attr(m?.name || "")}" placeholder="Nama murid" /></div>
+          <div class="field"><label>WHATSAPP</label><input name="phone" required value="${attr(m?.phone || "")}" placeholder="08xx xxxx xxxx" /></div>
+          <div class="field"><label>EMAIL</label><input type="email" name="email" value="${attr(m?.email || "")}" placeholder="email@example.com" /></div>
+          <div class="two-col">
+            <div class="field"><label>LEVEL</label>
+              <select name="level">
+                ${["Beginner","Intermediate","Advanced"].map(x=>`<option ${m?.level===x?"selected":""}>${x}</option>`).join("")}
+              </select>
+            </div>
+            <div class="field"><label>TANGGAL JOIN</label><input type="date" name="joined" required value="${attr(m?.joined || new Date().toISOString().slice(0,10))}" /></div>
+          </div>
+          <button class="primary-btn" type="submit">${m ? "Simpan Perubahan" : "Tambah Member"}</button>
+        </form>
+      `);
+    }
+
+    function saveMember(e){
+      e.preventDefault();
+      const f = Object.fromEntries(new FormData(e.target).entries());
+      if(editingMemberId){
+        const i = db.members.findIndex(x=>x.id===editingMemberId);
+        db.members[i] = {...db.members[i],...f};
+      }else{
+        db.members.push({id:crypto.randomUUID(),...f});
+      }
+      saveDB(); closeModal();
+    }
+
+    function deleteMember(id){
+      const m = db.members.find(x=>x.id===id);
+      if(!m) return;
+      if(confirm(`Hapus member ${m.name}? Booking dan review yang terkait tidak akan ikut terhapus.`)){
+        db.members = db.members.filter(x=>x.id!==id);
+        saveDB();
+      }
+    }
+
+    function escapeHtml(v=""){
+      return String(v).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[c]));
+    }
+    function attr(v=""){ return escapeHtml(v); }
+
+    renderAll();
+  </script>
+</body>
+</html>
