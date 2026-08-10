@@ -419,6 +419,80 @@
     body.dark .coach-hour-btn.closed{background:#382526;border-color:#613638;color:#ffb2b2}
     body.dark .coach-hour-btn.booked{background:#372e21;border-color:#5b4930;color:#f1c37d}
 
+
+    /* TOAST */
+    .toast-stack{
+      position:fixed;
+      right:16px;
+      bottom:88px;
+      z-index:9999;
+      display:grid;
+      gap:8px;
+      width:min(310px,calc(100vw - 32px));
+      pointer-events:none;
+    }
+    .toast{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:12px 14px;
+      border:1px solid var(--line);
+      border-radius:15px;
+      background:var(--surface);
+      color:var(--text);
+      box-shadow:0 16px 38px rgba(17,24,20,.16);
+      font-size:11px;
+      font-weight:800;
+      line-height:1.35;
+      opacity:0;
+      transform:translateY(10px) scale(.98);
+      transition:opacity .2s ease,transform .2s ease;
+    }
+    .toast.show{opacity:1;transform:translateY(0) scale(1)}
+    .toast-dot{
+      width:22px;height:22px;border-radius:50%;
+      display:grid;place-items:center;flex:0 0 auto;
+      background:var(--brand);color:#111814;
+      font-size:12px;font-weight:950;
+    }
+
+    /* PULL TO REFRESH */
+    .pull-refresh{
+      position:fixed;
+      left:50%;
+      top:10px;
+      z-index:9998;
+      transform:translate(-50%,-70px);
+      opacity:0;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 12px;
+      border-radius:999px;
+      background:var(--surface);
+      color:var(--text);
+      border:1px solid var(--line);
+      box-shadow:0 10px 28px rgba(17,24,20,.13);
+      font-size:10px;
+      font-weight:850;
+      transition:transform .18s ease,opacity .18s ease;
+      pointer-events:none;
+    }
+    .pull-refresh.visible{
+      opacity:1;
+      transform:translate(-50%,0);
+    }
+    .pull-refresh-icon{
+      width:18px;height:18px;
+      display:grid;place-items:center;
+      font-size:16px;
+      transition:transform .12s linear;
+    }
+    .pull-refresh.refreshing .pull-refresh-icon{
+      animation:pullSpin .8s linear infinite;
+    }
+    @keyframes pullSpin{to{transform:rotate(360deg)}}
+
     @media(min-width:700px){
       body{padding:18px 0}
       .app{background:rgba(255,255,255,.12);border-radius:36px}
@@ -1350,6 +1424,7 @@
           </div>
           <div class="member-actions">
             <button class="mini-btn" onclick="openEditAccount('${a.id}')">Edit</button>
+            <button class="mini-btn" onclick="openResetPassword('${a.id}')">Reset Password</button>
           </div>
         </article>
       `).join("");
@@ -1379,11 +1454,6 @@
           <div class="field">
             <label>EMAIL</label>
             <input name="email" type="email" value="${attr(a.email || "")}" required>
-          </div>
-
-          <div class="field">
-            <label>PASSWORD BARU (OPSIONAL)</label>
-            <input name="password" type="password" minlength="6">
           </div>
 
           ${isAdmin ? `
@@ -1451,10 +1521,10 @@
       try{
         const { data, error } = await sb.functions.invoke("admin-update-account", {
           body: {
+            action: "update_profile",
             id: editingAccountId,
             name: f.name,
             email: f.email,
-            password: f.password || "",
             role: f.role,
             phone: f.phone || "",
             level: f.level || "Beginner",
@@ -1475,13 +1545,95 @@
         }
 
         await loadAllData();
-        alert("Akun berhasil diperbarui.");
+        showToast("Akun berhasil diperbarui");
       }catch(err){
         alert("Gagal mengedit akun: " + (err?.message || "Edge Function admin-update-account belum tersedia."));
       }finally{
         if(document.getElementById("saveAccountEditBtn")){
           btn.disabled = false;
           btn.textContent = "Simpan Perubahan";
+        }
+      }
+    }
+
+    function openResetPassword(id){
+      const a = db.accounts.find(x=>x.id===id);
+      if(!a) return;
+
+      showModal("Reset Password", `
+        <form class="form" onsubmit="saveResetPassword(event,'${id}')">
+          <div class="field">
+            <label>AKUN</label>
+            <input value="${attr(a.email || "")}" disabled>
+          </div>
+
+          <div class="field">
+            <label>PASSWORD BARU</label>
+            <input
+              name="password"
+              type="password"
+              minlength="6"
+              autocomplete="new-password"
+              required
+            >
+          </div>
+
+          <div class="field">
+            <label>ULANGI PASSWORD</label>
+            <input
+              name="password_confirm"
+              type="password"
+              minlength="6"
+              autocomplete="new-password"
+              required
+            >
+          </div>
+
+          <button id="resetPasswordBtn" class="primary-btn" type="submit">Reset Password</button>
+        </form>
+      `);
+    }
+
+    async function saveResetPassword(e,id){
+      e.preventDefault();
+      const f = Object.fromEntries(new FormData(e.target).entries());
+
+      if(f.password !== f.password_confirm){
+        return alert("Konfirmasi password tidak sama.");
+      }
+
+      const btn = document.getElementById("resetPasswordBtn");
+      btn.disabled = true;
+      btn.textContent = "Menyimpan...";
+
+      try{
+        const { data, error } = await sb.functions.invoke("admin-update-account", {
+          body: {
+            action: "reset_password",
+            id,
+            password: f.password
+          }
+        });
+
+        if(error) throw error;
+        if(data?.error) throw new Error(data.error);
+
+        const isCurrentAdmin = !!data?.relogin;
+        closeModal();
+
+        if(isCurrentAdmin){
+          alert("Password admin berhasil diubah. Silakan login ulang dengan password baru.");
+          await sb.auth.signOut();
+          return;
+        }
+
+        showToast("Password akun berhasil direset");
+      }catch(err){
+        alert("Gagal reset password: " + (err?.message || "Unknown error"));
+      }finally{
+        if(document.getElementById("resetPasswordBtn")){
+          btn.disabled = false;
+          btn.textContent = "Reset Password";
         }
       }
     }
@@ -1504,7 +1656,12 @@
 
           <div class="field">
             <label>PASSWORD</label>
-            <input name="password" type="password" minlength="6" required>
+            <input name="password" type="password" minlength="6" autocomplete="new-password" required>
+          </div>
+
+          <div class="field">
+            <label>ULANGI PASSWORD</label>
+            <input name="password_confirm" type="password" minlength="6" autocomplete="new-password" required>
           </div>
 
           <div class="field">
@@ -1561,6 +1718,10 @@
       const f = Object.fromEntries(new FormData(form).entries());
       const btn = document.getElementById("createAccountBtn");
 
+      if(f.password !== f.password_confirm){
+        return alert("Konfirmasi password tidak sama.");
+      }
+
       if(f.role === "coach" && !f.coach_id){
         return alert("Pilih coach yang akan diberikan akun.");
       }
@@ -1586,7 +1747,25 @@
 
         closeModal();
         await loadAllData();
-        alert(`Akun ${f.role} berhasil dibuat.`);
+        showToast("Akun berhasil dibuat");
+
+        showModal("Akun Berhasil Dibuat", `
+          <div class="form">
+            <div class="field">
+              <label>EMAIL LOGIN</label>
+              <input value="${attr(f.email)}" readonly>
+            </div>
+            <div class="field">
+              <label>PASSWORD LOGIN</label>
+              <input value="${attr(f.password)}" readonly>
+            </div>
+            <div class="field">
+              <label>AKSES</label>
+              <input value="${attr(f.role === "coach" ? "Coach" : "Member")}" readonly>
+            </div>
+            <button class="primary-btn" type="button" onclick="copyLoginCredentials('${attr(f.email)}','${attr(f.password)}')">Copy Login</button>
+          </div>
+        `);
       }catch(err){
         alert("Gagal membuat akun: " + (err?.message || "Unknown error"));
       }finally{
@@ -1594,6 +1773,16 @@
           btn.disabled = false;
           btn.textContent = "Buat Akun";
         }
+      }
+    }
+
+    async function copyLoginCredentials(email,password){
+      const text = `Email: ${email}\nPassword: ${password}`;
+      try{
+        await navigator.clipboard.writeText(text);
+        alert("Email dan password berhasil dicopy.");
+      }catch{
+        alert(text);
       }
     }
 
@@ -1638,7 +1827,7 @@
 
       closeModal();
       await loadAllData();
-      alert("Coach berhasil ditambahkan. Jam 07.00–20.00 sudah otomatis tersedia.");
+      showToast("Coach berhasil ditambahkan");
     }
 
     function renderCoachAdmin(){
@@ -1769,6 +1958,7 @@
       db.slots.sort((a,b)=>`${a.slot_date} ${a.slot_time}`.localeCompare(`${b.slot_date} ${b.slot_time}`));
       renderCoachSlotsAdmin();
       await loadCoachEditHours(coachId);
+      showToast(closing ? "Jam coach berhasil ditutup" : "Jam coach berhasil dibuka");
     }
 
     async function saveCoachEdit(e,id){
@@ -1801,13 +1991,15 @@
       }
 
       await loadAllData();
-      alert("Data coach berhasil disimpan.");
+      showToast("Coach berhasil diperbarui");
     }
 
     async function toggleCoachActive(id,isActive){
       const { error } = await sb.from("coaches").update({is_active:!isActive,updated_at:new Date().toISOString()}).eq("id",id);
       if(error) return alert("Gagal mengubah coach: " + error.message);
       await loadAllData();
+      showToast("Status coach berhasil diperbarui");
+      showToast(isActive ? "Coach dinonaktifkan" : "Coach diaktifkan");
     }
 
     // ---------------- MODAL ----------------
@@ -1937,6 +2129,7 @@
 
       closeModal();
       await loadAllData();
+      showToast(old ? "Booking berhasil diperbarui" : "Booking berhasil ditambahkan");
     }
 
     async function toggleBookingStatus(id,currentStatus){
@@ -1944,6 +2137,7 @@
       const { error } = await sb.from("bookings").update({status:next}).eq("id",id);
       if(error) return alert("Gagal mengubah status: " + error.message);
       await loadAllData();
+      showToast("Status booking berhasil diperbarui");
     }
 
     async function deleteBooking(id){
@@ -1951,6 +2145,7 @@
       const { error } = await sb.from("bookings").delete().eq("id",id);
       if(error) return alert("Gagal menghapus booking: " + error.message);
       await loadAllData();
+      showToast("Booking berhasil dihapus");
     }
 
     // ---------------- REVIEWS ----------------
@@ -2011,6 +2206,7 @@
       btn.textContent = "Menyimpan...";
 
       const f = Object.fromEntries(new FormData(e.target).entries());
+      const wasEditingReview = !!editingReviewId;
 
       const payload = {
         member_id: f.member_id,
@@ -2034,6 +2230,7 @@
 
       closeModal();
       await loadAllData();
+      showToast(wasEditingReview ? "Review berhasil diperbarui" : "Review berhasil ditambahkan");
     }
 
     async function deleteReview(id){
@@ -2041,6 +2238,7 @@
       const { error } = await sb.from("reviews").delete().eq("id",id);
       if(error) return alert("Gagal menghapus review: " + error.message);
       await loadAllData();
+      showToast("Review berhasil dihapus");
     }
 
     // ---------------- MEMBERS ----------------
@@ -2086,6 +2284,7 @@
       btn.textContent = "Menyimpan...";
 
       const f = Object.fromEntries(new FormData(e.target).entries());
+      const wasEditingMember = !!editingMemberId;
       const payload = {
         name: f.name,
         phone: f.phone,
@@ -2136,6 +2335,7 @@
 
       closeModal();
       await loadAllData();
+      showToast(wasEditingMember ? "Member berhasil diperbarui" : "Member berhasil ditambahkan");
     }
 
     async function deleteMember(id){
@@ -2148,6 +2348,7 @@
       if(error) return alert("Gagal menghapus member: " + error.message);
 
       await loadAllData();
+      showToast("Member berhasil dihapus");
     }
 
     // ---------------- HELPERS ----------------
@@ -2163,8 +2364,120 @@
 
     function attr(v=""){ return escapeHtml(v); }
 
+
+    // ---------------- TOAST ----------------
+    function showToast(message){
+      const stack = document.getElementById("toastStack");
+      if(!stack) return;
+
+      const toast = document.createElement("div");
+      toast.className = "toast";
+      toast.innerHTML = `
+        <span class="toast-dot">✓</span>
+        <span>${escapeHtml(message)}</span>
+      `;
+      stack.appendChild(toast);
+
+      requestAnimationFrame(()=>toast.classList.add("show"));
+
+      setTimeout(()=>{
+        toast.classList.remove("show");
+        setTimeout(()=>toast.remove(),220);
+      },2600);
+    }
+
+    // ---------------- REFRESH DATA ----------------
+    async function refreshCurrentView(showMessage=true){
+      if(!currentUser || !currentProfile) return;
+
+      if(currentProfile.role === "admin"){
+        await loadAllData();
+      }else if(currentProfile.role === "coach"){
+        await loadCoachData();
+      }else{
+        await loadMemberData();
+      }
+
+      if(showMessage) showToast("Data berhasil diperbarui");
+    }
+
+    // ---------------- PULL TO REFRESH ----------------
+    function initPullToRefresh(){
+      const indicator = document.getElementById("pullRefresh");
+      const icon = document.getElementById("pullRefreshIcon");
+      const text = document.getElementById("pullRefreshText");
+      if(!indicator || !icon || !text) return;
+
+      let startY = 0;
+      let pulling = false;
+      let distance = 0;
+      let refreshing = false;
+      const threshold = 82;
+
+      document.addEventListener("touchstart",(e)=>{
+        if(refreshing) return;
+        if(window.scrollY <= 0 && e.touches.length === 1){
+          startY = e.touches[0].clientY;
+          pulling = true;
+          distance = 0;
+        }
+      },{passive:true});
+
+      document.addEventListener("touchmove",(e)=>{
+        if(!pulling || refreshing || e.touches.length !== 1) return;
+
+        distance = Math.max(0,e.touches[0].clientY - startY);
+        if(distance <= 0) return;
+
+        const progress = Math.min(distance / threshold,1);
+        indicator.classList.add("visible");
+        icon.style.transform = `rotate(${Math.round(progress*180)}deg)`;
+        text.textContent = distance >= threshold ? "Lepas untuk refresh" : "Tarik untuk refresh";
+      },{passive:true});
+
+      document.addEventListener("touchend",async ()=>{
+        if(!pulling || refreshing) return;
+        pulling = false;
+
+        if(distance >= threshold && currentUser){
+          refreshing = true;
+          indicator.classList.add("visible","refreshing");
+          icon.style.transform = "";
+          text.textContent = "Memperbarui...";
+
+          try{
+            await refreshCurrentView(false);
+            showToast("Data berhasil diperbarui");
+          }catch(err){
+            console.error("Pull refresh:",err);
+          }finally{
+            setTimeout(()=>{
+              indicator.classList.remove("visible","refreshing");
+              text.textContent = "Tarik untuk refresh";
+              refreshing = false;
+              distance = 0;
+            },350);
+          }
+        }else{
+          indicator.classList.remove("visible");
+          icon.style.transform = "";
+          text.textContent = "Tarik untuk refresh";
+          distance = 0;
+        }
+      },{passive:true});
+    }
+
+    initPullToRefresh();
     initTheme();
     init();
   </script>
+
+  <div id="pullRefresh" class="pull-refresh" aria-hidden="true">
+    <span id="pullRefreshIcon" class="pull-refresh-icon">↻</span>
+    <span id="pullRefreshText">Tarik untuk refresh</span>
+  </div>
+
+  <div id="toastStack" class="toast-stack" aria-live="polite" aria-atomic="true"></div>
+
 </body>
 </html>
