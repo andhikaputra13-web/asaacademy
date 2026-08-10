@@ -209,7 +209,7 @@
     .bottom-nav{
       position:fixed;z-index:30;bottom:14px;left:50%;transform:translateX(-50%);
       width:min(calc(100% - 28px),492px);padding:8px;background:var(--nav-bg);
-      backdrop-filter:blur(14px);border-radius:22px;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;
+      backdrop-filter:blur(14px);border-radius:22px;display:grid;grid-template-columns:repeat(5,1fr);gap:4px;
       box-shadow:0 18px 45px rgba(17,24,20,.32)
     }
     .nav-btn{border:0;background:transparent;color:#8f9892;padding:9px 6px;border-radius:16px;font-size:10px;font-weight:750}
@@ -380,6 +380,24 @@
 
 
 
+
+    .account-list{display:grid;gap:10px}
+    .account-card{
+      background:var(--surface);border:1px solid var(--line);
+      border-radius:20px;padding:15px;
+    }
+    .account-top{display:flex;align-items:center;gap:11px}
+    .account-icon{
+      width:42px;height:42px;border-radius:14px;background:var(--surface-soft);
+      display:grid;place-items:center;font-size:13px;font-weight:950;flex:0 0 auto
+    }
+    .account-name{font-size:13px;font-weight:900;letter-spacing:-.02em}
+    .account-email{font-size:10px;color:var(--muted);margin-top:3px;word-break:break-all}
+    .role-pill{
+      margin-left:auto;padding:6px 8px;border-radius:999px;
+      background:var(--surface-soft);font-size:9px;font-weight:850;text-transform:capitalize
+    }
+
     /* COACH / AVAILABILITY */
     .coach-grid{display:grid;gap:10px}
     .coach-card{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:15px}
@@ -419,21 +437,11 @@
       </div>
 
       <div class="auth-card">
-        <h2 id="authTitle">Welcome back.</h2>
-
-        <div class="auth-tabs">
-          <button id="loginTab" class="auth-tab active" type="button" onclick="setAuthMode('login')">Login</button>
-          <button id="signupTab" class="auth-tab" type="button" onclick="setAuthMode('signup')">Daftar</button>
-        </div>
+        <h2 id="authTitle">Login</h2>
 
         <div id="authMessage" class="auth-message"></div>
 
         <form id="authForm" class="form">
-          <div id="nameField" class="field hidden">
-            <label>NAMA LENGKAP</label>
-            <input id="adminName" type="text" autocomplete="name" />
-          </div>
-
           <div class="field">
             <label>EMAIL</label>
             <input id="authEmail" type="email" autocomplete="email" required />
@@ -442,11 +450,6 @@
           <div class="field">
             <label>PASSWORD</label>
             <input id="authPassword" type="password" autocomplete="current-password" required minlength="6" />
-          </div>
-
-          <div id="confirmPasswordField" class="field hidden">
-            <label>ULANGI PASSWORD</label>
-            <input id="authPasswordConfirm" type="password" autocomplete="new-password" minlength="6" />
           </div>
 
           <button id="authSubmit" class="primary-btn lime" type="submit">Login</button>
@@ -602,6 +605,15 @@
 
 
 
+
+      <section id="accountPage" class="page">
+        <div class="section-head">
+          <div><h2>Akun</h2></div>
+          <button class="text-btn" onclick="openAccount()">+ Akun</button>
+        </div>
+        <div id="accountList" class="account-list"></div>
+      </section>
+
       <section id="coachPage" class="page">
         <div class="section-head">
           <div><h2>Coach</h2></div>
@@ -618,7 +630,7 @@
       <section id="memberPage" class="page">
         <div class="section-head">
           <div><h2>Members</h2></div>
-          <button class="text-btn" onclick="openMember()">+ Member</button>
+          <button class="text-btn" onclick="openAccount('member')">+ Akun</button>
         </div>
         <div class="search">
           <span>⌕</span>
@@ -635,6 +647,7 @@
       <button class="nav-btn" data-page="reviewPage"><span>★</span>Review</button>
       <button class="nav-btn" data-page="memberPage"><span>♟</span>Member</button>
       <button class="nav-btn" data-page="coachPage"><span>◇</span>Coach</button>
+      <button class="nav-btn" data-page="accountPage"><span>⌘</span>Akun</button>
     </nav>
   </div>
 
@@ -664,14 +677,14 @@
     let activePage = "bookingPage";
     let bookingFilter = "all";
     let editingMemberId = null;
-    let authMode = "login";
 
     let db = {
       members: [],
       bookings: [],
       reviews: [],
       coaches: [],
-      slots: []
+      slots: [],
+      accounts: []
     };
 
     let memberCoaches = [];
@@ -730,22 +743,6 @@
     }
 
     // ---------------- AUTH ----------------
-    function setAuthMode(mode){
-      authMode = mode;
-      const login = mode === "login";
-
-      document.getElementById("loginTab").classList.toggle("active", login);
-      document.getElementById("signupTab").classList.toggle("active", !login);
-      document.getElementById("nameField").classList.toggle("hidden", login);
-      document.getElementById("confirmPasswordField").classList.toggle("hidden", login);
-
-      document.getElementById("authTitle").textContent = login ? "Login" : "Daftar Akun";
-      document.getElementById("authSubmit").textContent = login ? "Login" : "Buat Akun";
-      document.getElementById("authPassword").autocomplete = login ? "current-password" : "new-password";
-
-      clearAuthMessage();
-    }
-
     function showAuthMessage(message, type="error"){
       const el = document.getElementById("authMessage");
       el.textContent = message;
@@ -764,57 +761,28 @@
 
       const email = document.getElementById("authEmail").value.trim();
       const password = document.getElementById("authPassword").value;
-      const name = document.getElementById("adminName").value.trim();
-      const confirm = document.getElementById("authPasswordConfirm").value;
       const btn = document.getElementById("authSubmit");
 
       btn.disabled = true;
-      btn.textContent = authMode === "login" ? "Signing in..." : "Creating account...";
+      btn.textContent = "Signing in...";
 
       try{
-        if(authMode === "signup"){
-          if(!name) throw new Error("Nama member wajib diisi.");
-          if(password !== confirm) throw new Error("Password dan ulangi password tidak sama.");
-
-          const { data, error } = await sb.auth.signUp({
-            email,
-            password,
-            options: {
-              data: {
-                display_name: name,
-                account_type: "member"
-              }
-            }
-          });
-          if(error) throw error;
-
-          // Jika email confirmation dimatikan, Supabase bisa langsung membuat session.
-          // Member tetap tidak boleh masuk dashboard admin, jadi session langsung ditutup.
-          if(data.session){
-            await sb.auth.signOut();
-          }
-
-          clearAuthMessage();
-          document.getElementById("authForm").reset();
-        }else{
-          const { data, error } = await sb.auth.signInWithPassword({ email, password });
-          if(error) throw error;
-          await handleSignedIn(data.user);
-        }
+        const { data, error } = await sb.auth.signInWithPassword({ email, password });
+        if(error) throw error;
+        await handleSignedIn(data.user);
       }catch(err){
         showAuthMessage(translateAuthError(err?.message || "Terjadi kesalahan."));
       }finally{
         btn.disabled = false;
-        btn.textContent = authMode === "login" ? "Login" : "Buat Akun";
+        btn.textContent = "Login";
       }
     });
 
     function translateAuthError(message){
       const m = String(message).toLowerCase();
       if(m.includes("invalid login credentials")) return "Email atau password salah.";
-      if(m.includes("email not confirmed")) return "Email belum dikonfirmasi. Silakan cek inbox email admin.";
-      if(m.includes("user already registered")) return "Email tersebut sudah terdaftar. Silakan login.";
-      if(m.includes("password should be")) return "Password terlalu pendek. Gunakan minimal 6 karakter.";
+      if(m.includes("email not confirmed")) return "Akun belum aktif.";
+      if(m.includes("password should be")) return "Password terlalu pendek.";
       if(m.includes("rate limit")) return "Terlalu banyak percobaan. Coba beberapa saat lagi.";
       return message;
     }
@@ -861,13 +829,13 @@
       currentUser = null;
       currentProfile = null;
       currentMember = null;
-      db = {members:[],bookings:[],reviews:[],coaches:[],slots:[]};
+      db = {members:[],bookings:[],reviews:[],coaches:[],slots:[],accounts:[]};
       document.getElementById("appShell").classList.add("hidden");
       document.getElementById("memberShell").classList.add("hidden");
       document.getElementById("coachShell").classList.add("hidden");
       document.getElementById("authScreen").classList.remove("hidden");
       document.getElementById("authPassword").value = "";
-      setAuthMode("login");
+      clearAuthMessage();
     }
 
     // Auth state listener tidak lagi memanggil handleSignedIn saat SIGNED_IN.
@@ -1136,15 +1104,16 @@
     async function loadAllData(){
       showLoading();
 
-      const [membersRes, bookingsRes, reviewsRes, coachesRes, slotsRes] = await Promise.all([
+      const [membersRes, bookingsRes, reviewsRes, coachesRes, slotsRes, accountsRes] = await Promise.all([
         sb.from("members").select("*").order("created_at",{ascending:false}),
         sb.from("bookings").select("*").order("booking_date",{ascending:false}).order("booking_time",{ascending:false}),
         sb.from("reviews").select("*").order("review_date",{ascending:false}),
         sb.from("coaches").select("*").order("created_at"),
-        sb.from("coach_slots").select("*").order("slot_date").order("slot_time")
+        sb.from("coach_slots").select("*").order("slot_date").order("slot_time"),
+        sb.from("profiles").select("id,email,full_name,role,created_at").order("created_at",{ascending:false})
       ]);
 
-      const errors = [membersRes.error, bookingsRes.error, reviewsRes.error, coachesRes.error, slotsRes.error].filter(Boolean);
+      const errors = [membersRes.error, bookingsRes.error, reviewsRes.error, coachesRes.error, slotsRes.error, accountsRes.error].filter(Boolean);
       if(errors.length){
         console.error(errors);
         showDataError(errors[0].message);
@@ -1156,6 +1125,7 @@
       db.reviews = reviewsRes.data || [];
       db.coaches = coachesRes.data || [];
       db.slots = slotsRes.data || [];
+      db.accounts = accountsRes.data || [];
 
       renderAll();
     }
@@ -1164,6 +1134,8 @@
       document.getElementById("bookingList").innerHTML = `<div class="loading">Memuat booking...</div>`;
       document.getElementById("reviewList").innerHTML = `<div class="loading">Memuat review...</div>`;
       document.getElementById("memberList").innerHTML = `<div class="loading">Memuat member...</div>`;
+      const accountList = document.getElementById("accountList");
+      if(accountList) accountList.innerHTML = `<div class="loading">Memuat akun...</div>`;
     }
 
     function showDataError(message){
@@ -1171,6 +1143,8 @@
       document.getElementById("bookingList").innerHTML = html;
       document.getElementById("reviewList").innerHTML = html;
       document.getElementById("memberList").innerHTML = html;
+      const accountList = document.getElementById("accountList");
+      if(accountList) accountList.innerHTML = html;
     }
 
     function initials(name){
@@ -1308,6 +1282,7 @@
       renderMembers();
       renderCoachAdmin();
       renderCoachSlotsAdmin();
+      renderAccounts();
     }
 
     // ---------------- NAV ----------------
@@ -1335,8 +1310,145 @@
     function fabAction(){
       if(activePage==="bookingPage") openBooking();
       if(activePage==="reviewPage") openReview();
-      if(activePage==="memberPage") openMember();
+      if(activePage==="memberPage") openAccount("member");
       if(activePage==="coachPage") openCoachSlot();
+      if(activePage==="accountPage") openAccount();
+    }
+
+
+    // ---------------- ADMIN: ACCOUNTS ----------------
+    function renderAccounts(){
+      const list = document.getElementById("accountList");
+      if(!list) return;
+
+      if(!db.accounts.length){
+        list.innerHTML = `<div class="empty">Belum ada akun.</div>`;
+        return;
+      }
+
+      list.innerHTML = db.accounts.map(a=>`
+        <article class="account-card">
+          <div class="account-top">
+            <div class="account-icon">${initials(a.full_name || a.email)}</div>
+            <div class="grow">
+              <div class="account-name">${escapeHtml(a.full_name || "Tanpa nama")}</div>
+              <div class="account-email">${escapeHtml(a.email || "-")}</div>
+            </div>
+            <span class="role-pill">${escapeHtml(a.role)}</span>
+          </div>
+        </article>
+      `).join("");
+    }
+
+    function openAccount(defaultRole="member"){
+      const freeCoaches = db.coaches.filter(c=>!c.auth_user_id);
+      const coachOptions = freeCoaches.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join("");
+
+      showModal("Buat Akun", `
+        <form class="form" onsubmit="saveAccount(event)">
+          <div class="field">
+            <label>NAMA LENGKAP</label>
+            <input name="name" required>
+          </div>
+
+          <div class="field">
+            <label>EMAIL</label>
+            <input name="email" type="email" required>
+          </div>
+
+          <div class="field">
+            <label>PASSWORD</label>
+            <input name="password" type="password" minlength="6" required>
+          </div>
+
+          <div class="field">
+            <label>AKSES</label>
+            <select id="newAccountRole" name="role" onchange="updateAccountFields()" required>
+              <option value="member" ${defaultRole==="member"?"selected":""}>Member</option>
+              <option value="coach" ${defaultRole==="coach"?"selected":""}>Coach</option>
+            </select>
+          </div>
+
+          <div id="newMemberFields">
+            <div class="field">
+              <label>WHATSAPP</label>
+              <input name="phone" inputmode="tel">
+            </div>
+            <div class="field">
+              <label>LEVEL</label>
+              <select name="level">
+                <option>Beginner</option>
+                <option>Intermediate</option>
+                <option>Advanced</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="newCoachFields" class="hidden">
+            <div class="field">
+              <label>COACH</label>
+              <select name="coach_id">
+                <option value="">Pilih coach</option>
+                ${coachOptions}
+              </select>
+            </div>
+            ${freeCoaches.length ? "" : `<div class="error-box">Semua coach sudah memiliki akun.</div>`}
+          </div>
+
+          <button id="createAccountBtn" class="primary-btn lime" type="submit">Buat Akun</button>
+        </form>
+      `);
+
+      document.getElementById("newAccountRole").value = defaultRole;
+      updateAccountFields();
+    }
+
+    function updateAccountFields(){
+      const role = document.getElementById("newAccountRole")?.value || "member";
+      document.getElementById("newMemberFields")?.classList.toggle("hidden", role !== "member");
+      document.getElementById("newCoachFields")?.classList.toggle("hidden", role !== "coach");
+    }
+
+    async function saveAccount(e){
+      e.preventDefault();
+      const form = e.target;
+      const f = Object.fromEntries(new FormData(form).entries());
+      const btn = document.getElementById("createAccountBtn");
+
+      if(f.role === "coach" && !f.coach_id){
+        return alert("Pilih coach yang akan diberikan akun.");
+      }
+
+      btn.disabled = true;
+      btn.textContent = "Membuat...";
+
+      try{
+        const { data, error } = await sb.functions.invoke("admin-create-account", {
+          body: {
+            name: f.name,
+            email: f.email,
+            password: f.password,
+            role: f.role,
+            phone: f.phone || "",
+            level: f.level || "Beginner",
+            coach_id: f.coach_id || null
+          }
+        });
+
+        if(error) throw error;
+        if(data?.error) throw new Error(data.error);
+
+        closeModal();
+        await loadAllData();
+        alert(`Akun ${f.role} berhasil dibuat.`);
+      }catch(err){
+        alert("Gagal membuat akun: " + (err?.message || "Unknown error"));
+      }finally{
+        if(document.getElementById("createAccountBtn")){
+          btn.disabled = false;
+          btn.textContent = "Buat Akun";
+        }
+      }
     }
 
     // ---------------- ADMIN: COACH ----------------
