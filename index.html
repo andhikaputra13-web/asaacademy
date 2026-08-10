@@ -199,13 +199,6 @@
     .empty{text-align:center;padding:32px 20px;background:var(--surface);border:1px dashed #d6dad4;border-radius:22px;color:var(--muted);font-size:12px}
     .empty .emoji{font-size:30px;margin-bottom:7px}
     .loading{text-align:center;padding:25px;color:var(--muted);font-size:12px}
-
-    .fab{
-      position:fixed;right:max(18px, calc((100vw - 520px)/2 + 18px));
-      bottom:86px;width:54px;height:54px;border-radius:18px;border:0;
-      background:var(--brand);color:var(--dark);font-size:27px;font-weight:700;
-      box-shadow:0 14px 25px rgba(99,139,35,.32);z-index:20
-    }
     .bottom-nav{
       position:fixed;z-index:30;bottom:14px;left:50%;transform:translateX(-50%);
       width:min(calc(100% - 28px),492px);padding:8px;background:var(--nav-bg);
@@ -649,10 +642,7 @@
         <div id="memberList" class="list"></div>
       </section>
     </main>
-
-    <button class="fab" id="fab" onclick="fabAction()" aria-label="Tambah data">+</button>
-
-    <nav class="bottom-nav">
+<nav class="bottom-nav">
       <button class="nav-btn active" data-page="bookingPage"><span>◉</span>Booking</button>
       <button class="nav-btn" data-page="reviewPage"><span>★</span>Review</button>
       <button class="nav-btn" data-page="memberPage"><span>♟</span>Member</button>
@@ -1318,7 +1308,6 @@
         document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
         activePage = btn.dataset.page;
         document.getElementById(activePage).classList.add("active");
-        document.getElementById("fab").classList.toggle("hidden", activePage === "coachPage");
       });
     });
 
@@ -1332,13 +1321,6 @@
     });
 
     document.getElementById("memberSearch").addEventListener("input",renderMembers);
-
-    function fabAction(){
-      if(activePage==="bookingPage") openBooking();
-      if(activePage==="reviewPage") openReview();
-      if(activePage==="memberPage") openAccount("member");
-      if(activePage==="accountPage") openAccount();
-    }
 
 
     // ---------------- ADMIN: ACCOUNTS ----------------
