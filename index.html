@@ -870,6 +870,106 @@
       return message;
     }
 
+
+    function showLoggedOutState(message=""){
+      currentUser = null;
+      currentProfile = null;
+      currentMember = null;
+      currentCoach = null;
+
+      db = {
+        members:[],
+        bookings:[],
+        reviews:[],
+        coaches:[],
+        slots:[],
+        accounts:[]
+      };
+
+      document.getElementById("appShell")?.classList.add("hidden");
+      document.getElementById("memberShell")?.classList.add("hidden");
+      document.getElementById("coachShell")?.classList.add("hidden");
+      document.getElementById("authScreen")?.classList.remove("hidden");
+
+      const passwordInput = document.getElementById("authPassword");
+      if(passwordInput) passwordInput.value = "";
+
+      if(message) showAuthMessage(message);
+      else clearAuthMessage();
+    }
+
+    async function getActiveAccessToken(){
+      let { data: sessionData, error: sessionError } = await sb.auth.getSession();
+      let session = sessionData?.session;
+
+      if(sessionError || !session){
+        showLoggedOutState("Sesi telah berakhir. Silakan login kembali.");
+        throw new Error("Sesi telah berakhir. Silakan login kembali.");
+      }
+
+      const expiresAtMs = Number(session.expires_at || 0) * 1000;
+
+      if(expiresAtMs && expiresAtMs - Date.now() < 60_000){
+        const refreshed = await sb.auth.refreshSession();
+
+        if(refreshed.error || !refreshed.data?.session){
+          try{ await sb.auth.signOut({scope:"local"}); }catch(_){}
+          showLoggedOutState("Sesi telah berakhir. Silakan login kembali.");
+          throw new Error("Sesi telah berakhir. Silakan login kembali.");
+        }
+
+        session = refreshed.data.session;
+      }
+
+      // Validasi ke server agar token cache lama tidak dipakai.
+      const { data: userData, error: userError } = await sb.auth.getUser(session.access_token);
+
+      if(userError || !userData?.user){
+        try{ await sb.auth.signOut({scope:"local"}); }catch(_){}
+        showLoggedOutState("Sesi telah berakhir. Silakan login kembali.");
+        throw new Error("Sesi telah berakhir. Silakan login kembali.");
+      }
+
+      currentUser = userData.user;
+      return session.access_token;
+    }
+
+    async function invokeSecureFunction(functionName, body){
+      const accessToken = await getActiveAccessToken();
+
+      const { data, error } = await sb.functions.invoke(functionName, {
+        body,
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      });
+
+      if(error){
+        let detail = "";
+
+        try{
+          if(error.context && typeof error.context.json === "function"){
+            const payload = await error.context.json();
+            detail = payload?.error || payload?.message || "";
+          }
+        }catch(_){}
+
+        const message = detail || error.message || "Edge Function gagal dijalankan.";
+
+        if(/session|jwt|unauthor|token/i.test(message)){
+          showLoggedOutState("Sesi telah berakhir. Silakan login kembali.");
+        }
+
+        throw new Error(message);
+      }
+
+      if(data?.error){
+        throw new Error(data.error);
+      }
+
+      return data;
+    }
+
     let checkingRole = false;
     let currentProfile = null;
     let currentMember = null;
@@ -908,25 +1008,31 @@
     }
 
     async function logout(){
-      await sb.auth.signOut();
-      currentUser = null;
-      currentProfile = null;
-      currentMember = null;
-      db = {members:[],bookings:[],reviews:[],coaches:[],slots:[],accounts:[]};
-      document.getElementById("appShell").classList.add("hidden");
-      document.getElementById("memberShell").classList.add("hidden");
-      document.getElementById("coachShell").classList.add("hidden");
-      document.getElementById("authScreen").classList.remove("hidden");
-      document.getElementById("authPassword").value = "";
-      clearAuthMessage();
+      try{
+        await sb.auth.signOut();
+      }catch(err){
+        console.warn("Logout:",err);
+      }
+      showLoggedOutState();
     }
 
-    // Auth state listener tidak lagi memanggil handleSignedIn saat SIGNED_IN.
-    // Login diproses langsung setelah signInWithPassword() dan saat refresh melalui init().
-    // Ini mencegah pengecekan role berjalan dua kali bersamaan.
+    // Sinkronkan session antar-tab / antar-akun.
     sb.auth.onAuthStateChange((event, session)=>{
       if(event === "SIGNED_OUT"){
-        currentUser = null;
+        showLoggedOutState();
+        return;
+      }
+
+      if(event === "SIGNED_IN" && session?.user){
+        // Jika akun berganti di tab lain, reload agar role dan dashboard ikut berubah.
+        if(currentUser && currentUser.id !== session.user.id){
+          window.location.reload();
+          return;
+        }
+      }
+
+      if(event === "TOKEN_REFRESHED" && session?.user){
+        currentUser = session.user;
       }
     });
 
@@ -1525,21 +1631,16 @@
       btn.textContent = "Menyimpan...";
 
       try{
-        const { data, error } = await sb.functions.invoke("admin-update-account", {
-          body: {
-            action: "update_profile",
-            id: editingAccountId,
-            name: f.name,
-            email: f.email,
-            role: f.role,
-            phone: f.phone || "",
-            level: f.level || "Beginner",
-            coach_id: f.coach_id || null
-          }
+        const data = await invokeSecureFunction("admin-update-account", {
+          action: "update_profile",
+          id: editingAccountId,
+          name: f.name,
+          email: f.email,
+          role: f.role,
+          phone: f.phone || "",
+          level: f.level || "Beginner",
+          coach_id: f.coach_id || null
         });
-
-        if(error) throw error;
-        if(data?.error) throw new Error(data.error);
 
         const mustRelogin = !!data?.relogin;
         closeModal();
@@ -1613,16 +1714,11 @@
       btn.textContent = "Menyimpan...";
 
       try{
-        const { data, error } = await sb.functions.invoke("admin-update-account", {
-          body: {
-            action: "reset_password",
-            id,
-            password: f.password
-          }
+        const data = await invokeSecureFunction("admin-update-account", {
+          action: "reset_password",
+          id,
+          password: f.password
         });
-
-        if(error) throw error;
-        if(data?.error) throw new Error(data.error);
 
         const isCurrentAdmin = !!data?.relogin;
         closeModal();
@@ -1736,20 +1832,15 @@
       btn.textContent = "Membuat...";
 
       try{
-        const { data, error } = await sb.functions.invoke("admin-create-account", {
-          body: {
-            name: f.name,
-            email: f.email,
-            password: f.password,
-            role: f.role,
-            phone: f.phone || "",
-            level: f.level || "Beginner",
-            coach_id: f.coach_id || null
-          }
+        const data = await invokeSecureFunction("admin-create-account", {
+          name: f.name,
+          email: f.email,
+          password: f.password,
+          role: f.role,
+          phone: f.phone || "",
+          level: f.level || "Beginner",
+          coach_id: f.coach_id || null
         });
-
-        if(error) throw error;
-        if(data?.error) throw new Error(data.error);
 
         closeModal();
         await loadAllData();
@@ -1976,18 +2067,14 @@
       if(coach.auth_user_id){
         const account = db.accounts.find(a=>a.id===coach.auth_user_id);
         try{
-          const { data, error } = await sb.functions.invoke("admin-update-account", {
-            body: {
-              id: coach.auth_user_id,
-              name: f.name,
-              email: account?.email || "",
-              password: "",
-              role: "coach",
-              coach_id: id
-            }
+          await invokeSecureFunction("admin-update-account", {
+            action: "update_profile",
+            id: coach.auth_user_id,
+            name: f.name,
+            email: account?.email || "",
+            role: "coach",
+            coach_id: id
           });
-          if(error) throw error;
-          if(data?.error) throw new Error(data.error);
         }catch(err){
           return alert("Gagal mengubah coach: " + (err?.message || "Gagal memperbarui akun coach."));
         }
@@ -2304,20 +2391,16 @@
 
       if(editingMemberId && currentMember?.auth_user_id){
         try{
-          const { data, error } = await sb.functions.invoke("admin-update-account", {
-            body: {
-              id: currentMember.auth_user_id,
-              name: f.name,
-              email: f.email,
-              password: "",
-              role: "member",
-              phone: f.phone,
-              level: f.level,
-              coach_id: null
-            }
+          await invokeSecureFunction("admin-update-account", {
+            action: "update_profile",
+            id: currentMember.auth_user_id,
+            name: f.name,
+            email: f.email,
+            role: "member",
+            phone: f.phone,
+            level: f.level,
+            coach_id: null
           });
-          if(error) throw error;
-          if(data?.error) throw new Error(data.error);
 
           result = await sb.from("members").update({joined:f.joined}).eq("id",editingMemberId);
         }catch(err){
