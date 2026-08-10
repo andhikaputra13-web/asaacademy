@@ -677,6 +677,9 @@
     let activePage = "bookingPage";
     let bookingFilter = "all";
     let editingMemberId = null;
+    let editingBookingId = null;
+    let editingReviewId = null;
+    let editingAccountId = null;
 
     let db = {
       members: [],
@@ -1212,6 +1215,7 @@
               <span>🎾 ${escapeHtml(b.coach_id ? coachName(b.coach_id) : (b.coach || "Coach ASA"))}</span>
             </div>
             <div class="member-actions">
+              <button class="mini-btn" onclick="openBooking('','', '${b.id}')">Edit</button>
               <button class="mini-btn" onclick="toggleBookingStatus('${b.id}','${b.status}')">
                 ${b.status==="Completed" ? "Set Booked" : "Mark Completed"}
               </button>
@@ -1245,6 +1249,7 @@
           </div>
           <div class="review-note">${escapeHtml(r.note)}</div>
           <div class="member-actions">
+            <button class="mini-btn" onclick="openReview('', '${r.id}')">Edit</button>
             <button class="mini-btn danger" onclick="deleteReview('${r.id}')">Hapus Review</button>
           </div>
         </div>
@@ -1343,8 +1348,142 @@
             </div>
             <span class="role-pill">${escapeHtml(a.role)}</span>
           </div>
+          <div class="member-actions">
+            <button class="mini-btn" onclick="openEditAccount('${a.id}')">Edit</button>
+          </div>
         </article>
       `).join("");
+    }
+
+    function openEditAccount(id){
+      const a = db.accounts.find(x=>x.id===id);
+      if(!a) return;
+      editingAccountId = id;
+
+      const linkedMember = db.members.find(m=>m.auth_user_id===id || m.user_id===id);
+      const linkedCoach = db.coaches.find(c=>c.auth_user_id===id);
+      const isAdmin = a.role === "admin";
+
+      const availableCoaches = db.coaches.filter(c=>!c.auth_user_id || c.auth_user_id===id);
+      const coachOptions = availableCoaches.map(c=>`
+        <option value="${c.id}" ${linkedCoach?.id===c.id?"selected":""}>${escapeHtml(c.name)}</option>
+      `).join("");
+
+      showModal("Edit Akun", `
+        <form class="form" onsubmit="saveAccountEdit(event)">
+          <div class="field">
+            <label>NAMA LENGKAP</label>
+            <input name="name" value="${attr(a.full_name || linkedMember?.name || linkedCoach?.name || "")}" required>
+          </div>
+
+          <div class="field">
+            <label>EMAIL</label>
+            <input name="email" type="email" value="${attr(a.email || "")}" required>
+          </div>
+
+          <div class="field">
+            <label>PASSWORD BARU (OPSIONAL)</label>
+            <input name="password" type="password" minlength="6">
+          </div>
+
+          ${isAdmin ? `
+            <input type="hidden" name="role" value="admin">
+            <div class="field">
+              <label>AKSES</label>
+              <input value="Admin" disabled>
+            </div>
+          ` : `
+            <div class="field">
+              <label>AKSES</label>
+              <select id="editAccountRole" name="role" onchange="updateEditAccountFields()" required>
+                <option value="member" ${a.role==="member"?"selected":""}>Member</option>
+                <option value="coach" ${a.role==="coach"?"selected":""}>Coach</option>
+              </select>
+            </div>
+          `}
+
+          <div id="editMemberFields" class="${a.role==="member"&&!isAdmin?"":"hidden"}">
+            <div class="field">
+              <label>WHATSAPP</label>
+              <input name="phone" inputmode="tel" value="${attr(linkedMember?.phone || "")}">
+            </div>
+            <div class="field">
+              <label>LEVEL</label>
+              <select name="level">
+                ${["Beginner","Intermediate","Advanced"].map(x=>`<option ${linkedMember?.level===x?"selected":""}>${x}</option>`).join("")}
+              </select>
+            </div>
+          </div>
+
+          <div id="editCoachFields" class="${a.role==="coach"&&!isAdmin?"":"hidden"}">
+            <div class="field">
+              <label>COACH</label>
+              <select name="coach_id">
+                <option value="">Pilih coach</option>
+                ${coachOptions}
+              </select>
+            </div>
+          </div>
+
+          <button id="saveAccountEditBtn" class="primary-btn" type="submit">Simpan Perubahan</button>
+        </form>
+      `);
+    }
+
+    function updateEditAccountFields(){
+      const role = document.getElementById("editAccountRole")?.value;
+      document.getElementById("editMemberFields")?.classList.toggle("hidden", role !== "member");
+      document.getElementById("editCoachFields")?.classList.toggle("hidden", role !== "coach");
+    }
+
+    async function saveAccountEdit(e){
+      e.preventDefault();
+      const f = Object.fromEntries(new FormData(e.target).entries());
+      const btn = document.getElementById("saveAccountEditBtn");
+
+      if(f.role === "coach" && !f.coach_id){
+        return alert("Pilih coach terlebih dahulu.");
+      }
+
+      btn.disabled = true;
+      btn.textContent = "Menyimpan...";
+
+      try{
+        const { data, error } = await sb.functions.invoke("admin-update-account", {
+          body: {
+            id: editingAccountId,
+            name: f.name,
+            email: f.email,
+            password: f.password || "",
+            role: f.role,
+            phone: f.phone || "",
+            level: f.level || "Beginner",
+            coach_id: f.coach_id || null
+          }
+        });
+
+        if(error) throw error;
+        if(data?.error) throw new Error(data.error);
+
+        const mustRelogin = !!data?.relogin;
+        closeModal();
+
+        if(mustRelogin){
+          alert("Akun admin berhasil diperbarui. Silakan login ulang.");
+          await sb.auth.signOut();
+          return;
+        }
+
+        await loadAllData();
+        alert("Akun berhasil diperbarui.");
+      }catch(err){
+        alert("Gagal mengedit akun: " + (err?.message || "Edge Function admin-update-account belum tersedia."));
+      }finally{
+        if(document.getElementById("saveAccountEditBtn")){
+          btn.disabled = false;
+          btn.textContent = "Simpan Perubahan";
+        }
+      }
     }
 
     function openAccount(defaultRole="member"){
@@ -1635,13 +1774,34 @@
     async function saveCoachEdit(e,id){
       e.preventDefault();
       const f = Object.fromEntries(new FormData(e.target).entries());
-      const { error } = await sb.from("coaches").update({name:f.name,updated_at:new Date().toISOString()}).eq("id",id);
-      if(error) return alert("Gagal mengubah coach: " + error.message);
       const coach = db.coaches.find(c=>c.id===id);
-      if(coach) coach.name=f.name;
-      renderCoachAdmin();
-      renderCoachSlotsAdmin();
-      alert("Nama coach berhasil disimpan.");
+      if(!coach) return;
+
+      if(coach.auth_user_id){
+        const account = db.accounts.find(a=>a.id===coach.auth_user_id);
+        try{
+          const { data, error } = await sb.functions.invoke("admin-update-account", {
+            body: {
+              id: coach.auth_user_id,
+              name: f.name,
+              email: account?.email || "",
+              password: "",
+              role: "coach",
+              coach_id: id
+            }
+          });
+          if(error) throw error;
+          if(data?.error) throw new Error(data.error);
+        }catch(err){
+          return alert("Gagal mengubah coach: " + (err?.message || "Gagal memperbarui akun coach."));
+        }
+      }else{
+        const { error } = await sb.from("coaches").update({name:f.name,updated_at:new Date().toISOString()}).eq("id",id);
+        if(error) return alert("Gagal mengubah coach: " + error.message);
+      }
+
+      await loadAllData();
+      alert("Data coach berhasil disimpan.");
     }
 
     async function toggleCoachActive(id,isActive){
@@ -1660,6 +1820,9 @@
     function closeModal(){
       document.getElementById("modal").classList.remove("show");
       editingMemberId = null;
+      editingBookingId = null;
+      editingReviewId = null;
+      editingAccountId = null;
     }
 
     document.getElementById("modal").addEventListener("click",e=>{
@@ -1672,49 +1835,65 @@
     }
 
     // ---------------- BOOKINGS ----------------
-    function openBooking(type="", preselectedMember=""){
+    function openBooking(type="", preselectedMember="", id=null){
       if(!db.members.length){
         showModal("Booking Session", `
           <div class="empty"><div class="emoji">👤</div>Tambahkan member terlebih dahulu sebelum membuat booking.</div>
-          <div style="height:12px"></div>
-          <button class="primary-btn lime" onclick="closeModal();setTimeout(()=>openMember(),80)">Tambah Member</button>
         `);
         return;
       }
 
-      showModal("Tambah Booking", `
+      const b = id ? db.bookings.find(x=>x.id===id) : null;
+      editingBookingId = b?.id || null;
+
+      const selectedMember = b?.member_id || preselectedMember || "";
+      const selectedType = b?.type || type || "Single Session";
+      const selectedCoach = b?.coach_id || "";
+      const selectedStatus = b?.status || "Booked";
+      const selectedDate = b?.booking_date || "";
+      const selectedTime = String(b?.booking_time || "").slice(0,5);
+      const selectedNote = b?.note || "";
+
+      showModal(b ? "Edit Booking" : "Tambah Booking", `
         <form class="form" onsubmit="saveBooking(event)">
           <div class="field">
             <label>MEMBER</label>
-            <select name="member_id" required>${memberOptions(preselectedMember)}</select>
+            <select name="member_id" required>${memberOptions(selectedMember)}</select>
           </div>
 
           <div class="field">
             <label>PROGRAM</label>
             <select name="type" required>
-              <option ${type==="Single Session"?"selected":""}>Single Session</option>
-              <option ${type==="Package 4 Session"?"selected":""}>Package 4 Session</option>
-              <option ${type==="Package 8 Session"?"selected":""}>Package 8 Session</option>
+              ${["Single Session","Package 4 Session","Package 8 Session"].map(x=>`<option ${selectedType===x?"selected":""}>${x}</option>`).join("")}
             </select>
           </div>
 
           <div class="two-col">
-            <div class="field"><label>TANGGAL</label><input type="date" name="booking_date" required /></div>
-            <div class="field"><label>JAM</label><input type="time" name="booking_time" required /></div>
+            <div class="field"><label>TANGGAL</label><input type="date" name="booking_date" value="${attr(selectedDate)}" required /></div>
+            <div class="field"><label>JAM</label><input type="time" name="booking_time" value="${attr(selectedTime)}" required /></div>
           </div>
 
-          <div class="field"><label>COACH</label><select name="coach_id"><option value="">Pilih coach</option>${db.coaches.filter(c=>c.is_active).map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join("")}</select></div>
+          <div class="field">
+            <label>COACH</label>
+            <select name="coach_id">
+              <option value="">Pilih coach</option>
+              ${db.coaches.map(c=>`<option value="${c.id}" ${selectedCoach===c.id?"selected":""}>${escapeHtml(c.name)}${c.is_active?"":" · Inactive"}</option>`).join("")}
+            </select>
+          </div>
 
           <div class="field">
             <label>STATUS</label>
             <select name="status">
-              <option>Booked</option>
-              <option>Completed</option>
-              <option>Cancelled</option>
+              ${["Booked","Completed","Cancelled"].map(x=>`<option ${selectedStatus===x?"selected":""}>${x}</option>`).join("")}
             </select>
           </div>
 
-          <button class="primary-btn" type="submit">Simpan Booking</button>
+          <div class="field">
+            <label>CATATAN</label>
+            <textarea name="note">${escapeHtml(selectedNote)}</textarea>
+          </div>
+
+          <button class="primary-btn" type="submit">${b ? "Simpan Perubahan" : "Simpan Booking"}</button>
         </form>
       `);
     }
@@ -1726,21 +1905,33 @@
       btn.textContent = "Menyimpan...";
 
       const f = Object.fromEntries(new FormData(e.target).entries());
+      const old = editingBookingId ? db.bookings.find(x=>x.id===editingBookingId) : null;
 
-      const { error } = await sb.from("bookings").insert({
+      const sameSlotDetails = !!old &&
+        old.coach_id === (f.coach_id || null) &&
+        old.booking_date === f.booking_date &&
+        String(old.booking_time || "").slice(0,5) === String(f.booking_time || "").slice(0,5);
+
+      const payload = {
         member_id: f.member_id,
         type: f.type,
         booking_date: f.booking_date,
         booking_time: f.booking_time,
         coach_id: f.coach_id || null,
         coach: f.coach_id ? coachName(f.coach_id) : null,
-        status: f.status
-      });
+        status: f.status,
+        note: f.note || null,
+        slot_id: sameSlotDetails ? (old?.slot_id || null) : null
+      };
 
-      if(error){
-        alert("Gagal menyimpan booking: " + error.message);
+      const result = editingBookingId
+        ? await sb.from("bookings").update(payload).eq("id", editingBookingId)
+        : await sb.from("bookings").insert(payload);
+
+      if(result.error){
+        alert("Gagal menyimpan booking: " + result.error.message);
         btn.disabled = false;
-        btn.textContent = "Simpan Booking";
+        btn.textContent = editingBookingId ? "Simpan Perubahan" : "Simpan Booking";
         return;
       }
 
@@ -1763,52 +1954,52 @@
     }
 
     // ---------------- REVIEWS ----------------
-    function openReview(preselectedMember=""){
+    function openReview(preselectedMember="", id=null){
       if(!db.members.length){
         showModal("Tambah Review", `<div class="empty"><div class="emoji">⭐</div>Tambahkan member terlebih dahulu.</div>`);
         return;
       }
 
-      showModal("Tambah Review Coaching", `
+      const r = id ? db.reviews.find(x=>x.id===id) : null;
+      editingReviewId = r?.id || null;
+
+      const selectedMember = r?.member_id || preselectedMember || "";
+      const selectedDate = r?.review_date || "";
+      const selectedRating = Number(r?.rating || 5);
+      const selectedSession = r?.session || "Single Session";
+      const selectedFocus = r?.focus || "Technique";
+      const selectedNote = r?.note || "";
+
+      showModal(r ? "Edit Review Coaching" : "Tambah Review Coaching", `
         <form class="form" onsubmit="saveReview(event)">
-          <div class="field"><label>MEMBER</label><select name="member_id" required>${memberOptions(preselectedMember)}</select></div>
+          <div class="field"><label>MEMBER</label><select name="member_id" required>${memberOptions(selectedMember)}</select></div>
 
           <div class="two-col">
-            <div class="field"><label>TANGGAL</label><input type="date" name="review_date" required /></div>
+            <div class="field"><label>TANGGAL</label><input type="date" name="review_date" value="${attr(selectedDate)}" required /></div>
             <div class="field"><label>RATING</label>
               <select name="rating">
-                <option value="5">5 / 5</option>
-                <option value="4">4 / 5</option>
-                <option value="3">3 / 5</option>
-                <option value="2">2 / 5</option>
-                <option value="1">1 / 5</option>
+                ${[5,4,3,2,1].map(x=>`<option value="${x}" ${selectedRating===x?"selected":""}>${x} / 5</option>`).join("")}
               </select>
             </div>
           </div>
 
           <div class="field"><label>SESSION</label>
             <select name="session">
-              <option>Single Session</option>
-              <option>Package 4 Session</option>
-              <option>Package 8 Session</option>
+              ${["Single Session","Package 4 Session","Package 8 Session"].map(x=>`<option ${selectedSession===x?"selected":""}>${x}</option>`).join("")}
             </select>
           </div>
 
           <div class="field"><label>FOCUS</label>
             <select name="focus">
-              <option>Technique</option>
-              <option>Footwork</option>
-              <option>Consistency</option>
-              <option>Strategy</option>
-              <option>Fitness</option>
+              ${["Technique","Footwork","Consistency","Strategy","Fitness"].map(x=>`<option ${selectedFocus===x?"selected":""}>${x}</option>`).join("")}
             </select>
           </div>
 
           <div class="field"><label>CATATAN COACH</label>
-            <textarea name="note" required placeholder="Contoh: Forehand lebih stabil, berikutnya fokus positioning dan lob..."></textarea>
+            <textarea name="note" required>${escapeHtml(selectedNote)}</textarea>
           </div>
 
-          <button class="primary-btn" type="submit">Simpan Review</button>
+          <button class="primary-btn" type="submit">${r ? "Simpan Perubahan" : "Simpan Review"}</button>
         </form>
       `);
     }
@@ -1821,19 +2012,23 @@
 
       const f = Object.fromEntries(new FormData(e.target).entries());
 
-      const { error } = await sb.from("reviews").insert({
+      const payload = {
         member_id: f.member_id,
         review_date: f.review_date,
         rating: Number(f.rating),
         session: f.session,
         focus: f.focus,
         note: f.note
-      });
+      };
 
-      if(error){
-        alert("Gagal menyimpan review: " + error.message);
+      const result = editingReviewId
+        ? await sb.from("reviews").update(payload).eq("id", editingReviewId)
+        : await sb.from("reviews").insert(payload);
+
+      if(result.error){
+        alert("Gagal menyimpan review: " + result.error.message);
         btn.disabled = false;
-        btn.textContent = "Simpan Review";
+        btn.textContent = editingReviewId ? "Simpan Perubahan" : "Simpan Review";
         return;
       }
 
@@ -1900,13 +2095,39 @@
       };
 
       let result;
-      if(editingMemberId){
+      const currentMember = editingMemberId ? db.members.find(m=>m.id===editingMemberId) : null;
+
+      if(editingMemberId && currentMember?.auth_user_id){
+        try{
+          const { data, error } = await sb.functions.invoke("admin-update-account", {
+            body: {
+              id: currentMember.auth_user_id,
+              name: f.name,
+              email: f.email,
+              password: "",
+              role: "member",
+              phone: f.phone,
+              level: f.level,
+              coach_id: null
+            }
+          });
+          if(error) throw error;
+          if(data?.error) throw new Error(data.error);
+
+          result = await sb.from("members").update({joined:f.joined}).eq("id",editingMemberId);
+        }catch(err){
+          alert("Gagal menyimpan member: " + (err?.message || "Gagal memperbarui akun member."));
+          btn.disabled = false;
+          btn.textContent = "Simpan Perubahan";
+          return;
+        }
+      }else if(editingMemberId){
         result = await sb.from("members").update(payload).eq("id",editingMemberId);
       }else{
         result = await sb.from("members").insert(payload);
       }
 
-      if(result.error){
+      if(result?.error){
         alert("Gagal menyimpan member: " + result.error.message);
         btn.disabled = false;
         btn.textContent = editingMemberId ? "Simpan Perubahan" : "Tambah Member";
