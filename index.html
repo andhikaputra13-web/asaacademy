@@ -209,7 +209,7 @@
     .bottom-nav{
       position:fixed;z-index:30;bottom:14px;left:50%;transform:translateX(-50%);
       width:min(calc(100% - 28px),492px);padding:8px;background:var(--nav-bg);
-      backdrop-filter:blur(14px);border-radius:22px;display:grid;grid-template-columns:repeat(3,1fr);gap:4px;
+      backdrop-filter:blur(14px);border-radius:22px;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;
       box-shadow:0 18px 45px rgba(17,24,20,.32)
     }
     .nav-btn{border:0;background:transparent;color:#8f9892;padding:9px 6px;border-radius:16px;font-size:10px;font-weight:750}
@@ -378,6 +378,26 @@
     .member-nav-btn{border:0;background:transparent;color:var(--muted);border-radius:14px;padding:10px 8px;font-size:10px;font-weight:800}.member-nav-btn span{display:block;font-size:18px;margin-bottom:2px}.member-nav-btn.active{background:var(--text);color:var(--bg)}
     .wa-btn{background:#111814;color:#fff;border:0;width:100%;padding:14px 16px;border-radius:16px;font-weight:850;display:flex;align-items:center;justify-content:center;gap:8px}body.dark .wa-btn{background:var(--brand);color:#111814}
 
+
+
+    /* COACH / AVAILABILITY */
+    .coach-grid{display:grid;gap:10px}
+    .coach-card{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:15px}
+    .coach-card-top{display:flex;align-items:center;gap:11px}
+    .coach-avatar{width:42px;height:42px;border-radius:14px;background:var(--surface-soft);display:grid;place-items:center;font-weight:900}
+    .coach-name{font-size:14px;font-weight:900;letter-spacing:-.02em}
+    .coach-meta{font-size:10px;color:var(--muted);margin-top:3px}
+    .slot-list{display:grid;gap:9px}
+    .slot-card{background:var(--surface);border:1px solid var(--line);border-radius:17px;padding:13px;display:flex;align-items:center;gap:10px}
+    .slot-time{font-size:15px;font-weight:900;min-width:52px}
+    .slot-info{flex:1;min-width:0}.slot-info strong{display:block;font-size:12px}.slot-info span{font-size:10px;color:var(--muted)}
+    .status-dot{font-size:9px;font-weight:850;border-radius:999px;padding:6px 8px;background:#edf7dd;color:#53761d;white-space:nowrap}
+    .status-dot.closed{background:#f0f1ef;color:#707772}.status-dot.booked{background:#fff0dc;color:#9b6819}
+    body.dark .status-dot.closed{background:#252c27;color:#aeb7b1}
+    .coach-shell-title{font-size:11px;color:var(--muted);margin-bottom:7px}
+    .coach-shell-heading{margin:0;font-size:27px;line-height:1.08;letter-spacing:-.055em;font-weight:900}
+    .time-select-note{font-size:10px;color:var(--muted);margin-top:6px}
+
     @media(min-width:700px){
       body{padding:18px 0}
       .app{background:rgba(255,255,255,.12);border-radius:36px}
@@ -463,6 +483,47 @@
     </nav>
   </div>
 
+
+
+  <!-- COACH APP -->
+  <div id="coachShell" class="hidden">
+    <main class="member-app">
+      <header class="member-header">
+        <div class="member-brand">
+          <div class="member-logo">ASA</div>
+          <div class="member-brand-name">ASA Academy</div>
+        </div>
+        <div class="member-top-actions">
+          <button id="coachThemeToggle" class="icon-btn" type="button" title="Ganti tema" aria-label="Ganti tema" onclick="toggleTheme()"></button>
+          <button class="icon-btn" type="button" title="Logout" aria-label="Logout" onclick="logout()">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5"></path><path d="M15 12H3"></path><path d="M21 19V5a2 2 0 0 0-2-2h-6"></path></svg>
+          </button>
+        </div>
+      </header>
+
+      <div class="member-welcome">
+        <div class="coach-shell-title">Coach</div>
+        <h1 id="coachHeading" class="coach-shell-heading">Your upcoming<br>sessions.</h1>
+      </div>
+
+      <section id="coachSchedulePage" class="member-page active">
+        <div class="member-section-title"><h2>Schedule</h2></div>
+        <div id="coachScheduleList" class="slot-list"></div>
+      </section>
+
+      <section id="coachAvailabilityPage" class="member-page">
+        <div class="member-section-title"><h2>Availability</h2></div>
+        <div id="coachAvailabilityList" class="slot-list"></div>
+      </section>
+    </main>
+
+    <nav class="member-bottom-nav">
+      <button class="member-nav-btn coach-nav-btn active" data-coach-page="coachSchedulePage"><span>◉</span>Schedule</button>
+      <button class="member-nav-btn coach-nav-btn" data-coach-page="coachAvailabilityPage"><span>◷</span>Availability</button>
+    </nav>
+  </div>
+
+
   <!-- APP -->
   <div id="appShell" class="hidden">
     <main class="app">
@@ -539,6 +600,21 @@
         <div id="reviewList" class="list"></div>
       </section>
 
+
+
+      <section id="coachPage" class="page">
+        <div class="section-head">
+          <div><h2>Coach</h2></div>
+          <button class="text-btn" onclick="openCoachSlot()">+ Slot</button>
+        </div>
+        <div id="coachAdminList" class="coach-grid"></div>
+
+        <div class="section-head">
+          <div><h2>Availability</h2></div>
+        </div>
+        <div id="coachSlotAdminList" class="slot-list"></div>
+      </section>
+
       <section id="memberPage" class="page">
         <div class="section-head">
           <div><h2>Members</h2></div>
@@ -558,6 +634,7 @@
       <button class="nav-btn active" data-page="bookingPage"><span>◉</span>Booking</button>
       <button class="nav-btn" data-page="reviewPage"><span>★</span>Review</button>
       <button class="nav-btn" data-page="memberPage"><span>♟</span>Member</button>
+      <button class="nav-btn" data-page="coachPage"><span>◇</span>Coach</button>
     </nav>
   </div>
 
@@ -592,8 +669,17 @@
     let db = {
       members: [],
       bookings: [],
-      reviews: []
+      reviews: [],
+      coaches: [],
+      slots: []
     };
+
+    let memberCoaches = [];
+    let lastMemberSlots = [];
+    let currentCoach = null;
+    let coachBookings = [];
+    let coachSlots = [];
+    let coachMembers = [];
 
     // ---------------- THEME ----------------
     const sunIcon = `
@@ -619,7 +705,7 @@
       document.body.classList.toggle("dark", isDark);
       document.documentElement.style.colorScheme = isDark ? "dark" : "light";
 
-      ["themeToggle","memberThemeToggle"].forEach(id=>{
+      ["themeToggle","memberThemeToggle","coachThemeToggle"].forEach(id=>{
         const btn = document.getElementById(id);
         if(btn){
           btn.innerHTML = isDark ? sunIcon : moonIcon;
@@ -751,12 +837,19 @@
 
       if(profile.role === "admin"){
         document.getElementById("memberShell").classList.add("hidden");
+        document.getElementById("coachShell").classList.add("hidden");
         document.getElementById("appShell").classList.remove("hidden");
         const name = profile.full_name || user?.user_metadata?.display_name || "ASA";
         document.getElementById("adminIdentity").textContent = `${name} · ${user?.email || ""}`;
         await loadAllData();
+      }else if(profile.role === "coach"){
+        document.getElementById("appShell").classList.add("hidden");
+        document.getElementById("memberShell").classList.add("hidden");
+        document.getElementById("coachShell").classList.remove("hidden");
+        await loadCoachData();
       }else{
         document.getElementById("appShell").classList.add("hidden");
+        document.getElementById("coachShell").classList.add("hidden");
         document.getElementById("memberShell").classList.remove("hidden");
         await loadMemberData();
       }
@@ -768,9 +861,10 @@
       currentUser = null;
       currentProfile = null;
       currentMember = null;
-      db = {members:[],bookings:[],reviews:[]};
+      db = {members:[],bookings:[],reviews:[],coaches:[],slots:[]};
       document.getElementById("appShell").classList.add("hidden");
       document.getElementById("memberShell").classList.add("hidden");
+      document.getElementById("coachShell").classList.add("hidden");
       document.getElementById("authScreen").classList.remove("hidden");
       document.getElementById("authPassword").value = "";
       setAuthMode("login");
@@ -805,6 +899,10 @@
       }
       currentMember = member;
       document.getElementById("memberName").textContent = member?.name || currentProfile?.full_name || "Member";
+
+      const { data: coachesData } = await sb.from("coaches").select("id,name,is_active").eq("is_active",true).order("created_at");
+      memberCoaches = coachesData || [];
+
       await loadMyReviews();
     }
 
@@ -828,32 +926,225 @@
     });
 
     function openMemberBooking(type){
+      if(!memberCoaches.length){
+        showModal("Booking Session", `<div class="member-empty">Coach belum tersedia.</div>`);
+        return;
+      }
+
       const today = new Date().toISOString().slice(0,10);
-      showModal("Booking Session", `<form class="form" onsubmit="sendBookingToWhatsApp(event)"><input type="hidden" name="type" value="${attr(type)}"><div class="field"><label>SESSION</label><input value="${attr(type)}" disabled></div><div class="two-col"><div class="field"><label>TANGGAL</label><input type="date" name="date" min="${today}" required></div><div class="field"><label>JAM</label><input type="time" name="time" required></div></div><div class="field"><label>CATATAN</label><textarea name="note" placeholder="Opsional"></textarea></div><button class="wa-btn" type="submit"><span>WhatsApp</span><span>→</span></button></form>`);
+      const coachOptions = memberCoaches.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join("");
+
+      showModal("Booking Session", `
+        <form class="form" onsubmit="sendBookingToWhatsApp(event)">
+          <input type="hidden" name="type" value="${attr(type)}">
+
+          <div class="field">
+            <label>SESSION</label>
+            <input value="${attr(type)}" disabled>
+          </div>
+
+          <div class="field">
+            <label>COACH</label>
+            <select id="memberCoachSelect" name="coach_id" required onchange="refreshMemberSlots()">
+              <option value="">Pilih coach</option>
+              ${coachOptions}
+            </select>
+          </div>
+
+          <div class="field">
+            <label>TANGGAL</label>
+            <input id="memberDateInput" type="date" name="date" min="${today}" required onchange="refreshMemberSlots()">
+          </div>
+
+          <div class="field">
+            <label>JAM TERSEDIA</label>
+            <select id="memberSlotSelect" name="slot_id" required disabled>
+              <option value="">Pilih coach dan tanggal dahulu</option>
+            </select>
+            <div id="memberSlotNote" class="time-select-note"></div>
+          </div>
+
+          <div class="field">
+            <label>CATATAN</label>
+            <textarea name="note"></textarea>
+          </div>
+
+          <button class="wa-btn" type="submit"><span>Booking via WhatsApp</span><span>→</span></button>
+        </form>
+      `);
     }
 
-    function sendBookingToWhatsApp(e){
+    async function refreshMemberSlots(){
+      const coachId = document.getElementById("memberCoachSelect")?.value;
+      const date = document.getElementById("memberDateInput")?.value;
+      const select = document.getElementById("memberSlotSelect");
+      const note = document.getElementById("memberSlotNote");
+      if(!select) return;
+
+      lastMemberSlots = [];
+      if(!coachId || !date){
+        select.disabled = true;
+        select.innerHTML = `<option value="">Pilih coach dan tanggal dahulu</option>`;
+        if(note) note.textContent = "";
+        return;
+      }
+
+      select.disabled = true;
+      select.innerHTML = `<option value="">Memuat jam...</option>`;
+
+      const { data, error } = await sb
+        .from("coach_slots")
+        .select("id,coach_id,slot_date,slot_time,is_open")
+        .eq("coach_id",coachId)
+        .eq("slot_date",date)
+        .eq("is_open",true)
+        .order("slot_time");
+
+      if(error){
+        select.innerHTML = `<option value="">Gagal memuat jam</option>`;
+        if(note) note.textContent = "";
+        return;
+      }
+
+      lastMemberSlots = data || [];
+      if(!lastMemberSlots.length){
+        select.innerHTML = `<option value="">Tidak ada jam tersedia</option>`;
+        if(note) note.textContent = "Admin belum membuka slot untuk tanggal ini.";
+        return;
+      }
+
+      select.disabled = false;
+      select.innerHTML = `<option value="">Pilih jam</option>` + lastMemberSlots.map(s=>
+        `<option value="${s.id}">${String(s.slot_time).slice(0,5)}</option>`
+      ).join("");
+      if(note) note.textContent = `${lastMemberSlots.length} jam tersedia`;
+    }
+
+    async function sendBookingToWhatsApp(e){
       e.preventDefault();
+      const btn = e.target.querySelector("button[type=submit]");
       const f = Object.fromEntries(new FormData(e.target).entries());
+      const slot = lastMemberSlots.find(s=>s.id===f.slot_id);
+      const coach = memberCoaches.find(c=>c.id===f.coach_id);
+
+      if(!currentMember?.id) return alert("Data member belum terhubung.");
+      if(!slot || !coach) return alert("Pilih coach dan jam yang tersedia.");
+
+      btn.disabled = true;
+      btn.textContent = "Memproses...";
+
+      const { error } = await sb.from("bookings").insert({
+        member_id: currentMember.id,
+        type: f.type,
+        booking_date: f.date,
+        booking_time: slot.slot_time,
+        coach_id: coach.id,
+        slot_id: slot.id,
+        coach: coach.name,
+        note: f.note || null,
+        status: "Booked"
+      });
+
+      if(error){
+        btn.disabled = false;
+        btn.innerHTML = `<span>Booking via WhatsApp</span><span>→</span>`;
+        await refreshMemberSlots();
+        alert(error.code === "23505" ? "Jam tersebut baru saja terambil. Silakan pilih jam lain." : "Booking gagal: " + error.message);
+        return;
+      }
+
       const name = currentMember?.name || currentProfile?.full_name || "Member";
       const email = currentUser?.email || "-";
       const phone = currentMember?.phone || "-";
-      const message = ["Halo ASA Academy, saya ingin booking session.","",`Nama: ${name}`,`Email: ${email}`,`No. HP: ${phone}`,`Session: ${f.type}`,`Tanggal: ${formatDate(f.date)}`,`Jam: ${f.time}`,f.note ? `Catatan: ${f.note}` : ""].filter(Boolean).join("\\n");
+      const message = [
+        "Halo ASA Academy, saya ingin booking session.",
+        "",
+        `Nama: ${name}`,
+        `Email: ${email}`,
+        `No. HP: ${phone}`,
+        `Session: ${f.type}`,
+        `Coach: ${coach.name}`,
+        `Tanggal: ${formatDate(f.date)}`,
+        `Jam: ${String(slot.slot_time).slice(0,5)}`,
+        f.note ? `Catatan: ${f.note}` : ""
+      ].filter(Boolean).join("\\n");
+
       window.open(`https://wa.me/62882008255252?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
       closeModal();
     }
+
+    // ---------------- COACH APP ----------------
+    async function loadCoachData(){
+      const { data: coach, error } = await sb.from("coaches").select("id,name,is_active").eq("auth_user_id",currentUser.id).maybeSingle();
+      if(error || !coach){
+        document.getElementById("coachScheduleList").innerHTML = `<div class="member-empty">Akun coach belum terhubung ke data coach.</div>`;
+        document.getElementById("coachAvailabilityList").innerHTML = `<div class="member-empty">Hubungi admin untuk menghubungkan akun.</div>`;
+        return;
+      }
+
+      currentCoach = coach;
+      document.querySelector("#coachShell .coach-shell-title").textContent = coach.name;
+
+      const [bookingsRes, slotsRes, membersRes] = await Promise.all([
+        sb.from("bookings").select("*").eq("coach_id",coach.id).order("booking_date").order("booking_time"),
+        sb.from("coach_slots").select("*").eq("coach_id",coach.id).order("slot_date").order("slot_time"),
+        sb.from("members").select("id,name,phone,email")
+      ]);
+
+      coachBookings = bookingsRes.data || [];
+      coachSlots = slotsRes.data || [];
+      coachMembers = membersRes.data || [];
+      renderCoachSchedule();
+      renderCoachAvailability();
+    }
+
+    function renderCoachSchedule(){
+      const list = document.getElementById("coachScheduleList");
+      const today = new Date().toISOString().slice(0,10);
+      const rows = coachBookings.filter(b=>b.booking_date >= today && b.status !== "Cancelled");
+      if(!rows.length){ list.innerHTML = `<div class="member-empty">Belum ada jadwal coaching.</div>`; return; }
+      list.innerHTML = rows.map(b=>{
+        const m = coachMembers.find(x=>x.id===b.member_id);
+        return `<div class="slot-card"><div class="slot-time">${String(b.booking_time).slice(0,5)}</div><div class="slot-info"><strong>${escapeHtml(m?.name || "Member")}</strong><span>${formatDate(b.booking_date)} · ${escapeHtml(b.type)}</span></div><span class="status-dot">${escapeHtml(b.status)}</span></div>`;
+      }).join("");
+    }
+
+    function renderCoachAvailability(){
+      const list = document.getElementById("coachAvailabilityList");
+      const today = new Date().toISOString().slice(0,10);
+      const rows = coachSlots.filter(s=>s.slot_date >= today);
+      if(!rows.length){ list.innerHTML = `<div class="member-empty">Belum ada availability.</div>`; return; }
+      list.innerHTML = rows.map(s=>{
+        const booked = coachBookings.some(b=>b.slot_id===s.id && b.status!=="Cancelled");
+        const label = booked ? "Booked" : (s.is_open ? "Open" : "Closed");
+        const cls = booked ? "booked" : (s.is_open ? "" : "closed");
+        return `<div class="slot-card"><div class="slot-time">${String(s.slot_time).slice(0,5)}</div><div class="slot-info"><strong>${formatDate(s.slot_date)}</strong><span>${escapeHtml(currentCoach?.name || "Coach")}</span></div><span class="status-dot ${cls}">${label}</span></div>`;
+      }).join("");
+    }
+
+    document.querySelectorAll(".coach-nav-btn").forEach(btn=>{
+      btn.addEventListener("click",()=>{
+        document.querySelectorAll(".coach-nav-btn").forEach(x=>x.classList.remove("active"));
+        btn.classList.add("active");
+        document.querySelectorAll("#coachShell .member-page").forEach(x=>x.classList.remove("active"));
+        document.getElementById(btn.dataset.coachPage).classList.add("active");
+        document.getElementById("coachHeading").innerHTML = btn.dataset.coachPage === "coachAvailabilityPage" ? "Your available<br>hours." : "Your upcoming<br>sessions.";
+      });
+    });
 
     // ---------------- DATA ----------------
     async function loadAllData(){
       showLoading();
 
-      const [membersRes, bookingsRes, reviewsRes] = await Promise.all([
+      const [membersRes, bookingsRes, reviewsRes, coachesRes, slotsRes] = await Promise.all([
         sb.from("members").select("*").order("created_at",{ascending:false}),
         sb.from("bookings").select("*").order("booking_date",{ascending:false}).order("booking_time",{ascending:false}),
-        sb.from("reviews").select("*").order("review_date",{ascending:false})
+        sb.from("reviews").select("*").order("review_date",{ascending:false}),
+        sb.from("coaches").select("*").order("created_at"),
+        sb.from("coach_slots").select("*").order("slot_date").order("slot_time")
       ]);
 
-      const errors = [membersRes.error, bookingsRes.error, reviewsRes.error].filter(Boolean);
+      const errors = [membersRes.error, bookingsRes.error, reviewsRes.error, coachesRes.error, slotsRes.error].filter(Boolean);
       if(errors.length){
         console.error(errors);
         showDataError(errors[0].message);
@@ -863,6 +1154,8 @@
       db.members = membersRes.data || [];
       db.bookings = bookingsRes.data || [];
       db.reviews = reviewsRes.data || [];
+      db.coaches = coachesRes.data || [];
+      db.slots = slotsRes.data || [];
 
       renderAll();
     }
@@ -891,6 +1184,10 @@
 
     function memberName(id){
       return db.members.find(m=>m.id===id)?.name || "Member dihapus";
+    }
+
+    function coachName(id){
+      return db.coaches.find(c=>c.id===id)?.name || "Coach ASA";
     }
 
     function renderStats(){
@@ -923,7 +1220,7 @@
             <div class="meta-row">
               <span>📅 ${formatDate(b.booking_date)}</span>
               <span>🕒 ${escapeHtml(String(b.booking_time || "").slice(0,5))}</span>
-              <span>🎾 ${escapeHtml(b.coach || "Coach ASA")}</span>
+              <span>🎾 ${escapeHtml(b.coach_id ? coachName(b.coach_id) : (b.coach || "Coach ASA"))}</span>
             </div>
             <div class="member-actions">
               <button class="mini-btn" onclick="toggleBookingStatus('${b.id}','${b.status}')">
@@ -1009,6 +1306,8 @@
       renderBookings();
       renderReviews();
       renderMembers();
+      renderCoachAdmin();
+      renderCoachSlotsAdmin();
     }
 
     // ---------------- NAV ----------------
@@ -1037,6 +1336,80 @@
       if(activePage==="bookingPage") openBooking();
       if(activePage==="reviewPage") openReview();
       if(activePage==="memberPage") openMember();
+      if(activePage==="coachPage") openCoachSlot();
+    }
+
+    // ---------------- ADMIN: COACH ----------------
+    function renderCoachAdmin(){
+      const list = document.getElementById("coachAdminList");
+      if(!list) return;
+      if(!db.coaches.length){ list.innerHTML = `<div class="empty">Belum ada coach.</div>`; return; }
+      list.innerHTML = db.coaches.map((c,i)=>`
+        <div class="coach-card">
+          <div class="coach-card-top">
+            <div class="coach-avatar">${i+1}</div>
+            <div class="grow"><div class="coach-name">${escapeHtml(c.name)}</div><div class="coach-meta">${c.auth_user_id ? "Akun coach terhubung" : "Belum terhubung akun login"}</div></div>
+            <span class="badge ${c.is_active ? "" : "dark"}">${c.is_active ? "Active" : "Inactive"}</span>
+          </div>
+          <div class="member-actions">
+            <button class="mini-btn" onclick="openCoachEdit('${c.id}')">Edit</button>
+            <button class="mini-btn" onclick="openCoachSlot('${c.id}')">+ Slot</button>
+            <button class="mini-btn" onclick="toggleCoachActive('${c.id}',${c.is_active})">${c.is_active ? "Nonaktifkan" : "Aktifkan"}</button>
+          </div>
+        </div>`).join("");
+    }
+
+    function renderCoachSlotsAdmin(){
+      const list = document.getElementById("coachSlotAdminList");
+      if(!list) return;
+      const today = new Date().toISOString().slice(0,10);
+      const rows = db.slots.filter(s=>s.slot_date >= today).slice(0,80);
+      if(!rows.length){ list.innerHTML = `<div class="empty">Belum ada slot availability.</div>`; return; }
+      list.innerHTML = rows.map(s=>{
+        const booking = db.bookings.find(b=>b.slot_id===s.id && b.status!=="Cancelled");
+        const label = booking ? "Booked" : (s.is_open ? "Open" : "Closed");
+        const cls = booking ? "booked" : (s.is_open ? "" : "closed");
+        return `<div class="slot-card"><div class="slot-time">${String(s.slot_time).slice(0,5)}</div><div class="slot-info"><strong>${escapeHtml(coachName(s.coach_id))}</strong><span>${formatDate(s.slot_date)}</span></div><span class="status-dot ${cls}">${label}</span>${booking ? "" : `<button class="mini-btn" onclick="toggleCoachSlot('${s.id}',${s.is_open})">${s.is_open ? "Tutup" : "Buka"}</button>`}</div>`;
+      }).join("");
+    }
+
+    function openCoachSlot(preselected=""){
+      if(!db.coaches.length) return alert("Coach belum tersedia.");
+      const today = new Date().toISOString().slice(0,10);
+      const options = db.coaches.map(c=>`<option value="${c.id}" ${c.id===preselected?"selected":""}>${escapeHtml(c.name)}</option>`).join("");
+      showModal("Tambah Availability", `<form class="form" onsubmit="saveCoachSlot(event)"><div class="field"><label>COACH</label><select name="coach_id" required><option value="">Pilih coach</option>${options}</select></div><div class="two-col"><div class="field"><label>TANGGAL</label><input type="date" name="slot_date" min="${today}" required></div><div class="field"><label>JAM</label><input type="time" name="slot_time" required></div></div><button class="primary-btn" type="submit">Buka Slot</button></form>`);
+    }
+
+    async function saveCoachSlot(e){
+      e.preventDefault();
+      const f = Object.fromEntries(new FormData(e.target).entries());
+      const { error } = await sb.from("coach_slots").upsert({coach_id:f.coach_id,slot_date:f.slot_date,slot_time:f.slot_time,is_open:true},{onConflict:"coach_id,slot_date,slot_time"});
+      if(error) return alert("Gagal menyimpan slot: " + error.message);
+      closeModal(); await loadAllData();
+    }
+
+    async function toggleCoachSlot(id,isOpen){
+      const { error } = await sb.from("coach_slots").update({is_open:!isOpen,updated_at:new Date().toISOString()}).eq("id",id);
+      if(error) return alert("Gagal mengubah slot: " + error.message);
+      await loadAllData();
+    }
+
+    function openCoachEdit(id){
+      const c = db.coaches.find(x=>x.id===id); if(!c) return;
+      showModal("Edit Coach", `<form class="form" onsubmit="saveCoachEdit(event,'${id}')"><div class="field"><label>NAMA COACH</label><input name="name" value="${attr(c.name)}" required></div><button class="primary-btn" type="submit">Simpan</button></form>`);
+    }
+
+    async function saveCoachEdit(e,id){
+      e.preventDefault(); const f = Object.fromEntries(new FormData(e.target).entries());
+      const { error } = await sb.from("coaches").update({name:f.name,updated_at:new Date().toISOString()}).eq("id",id);
+      if(error) return alert("Gagal mengubah coach: " + error.message);
+      closeModal(); await loadAllData();
+    }
+
+    async function toggleCoachActive(id,isActive){
+      const { error } = await sb.from("coaches").update({is_active:!isActive,updated_at:new Date().toISOString()}).eq("id",id);
+      if(error) return alert("Gagal mengubah coach: " + error.message);
+      await loadAllData();
     }
 
     // ---------------- MODAL ----------------
@@ -1092,7 +1465,7 @@
             <div class="field"><label>JAM</label><input type="time" name="booking_time" required /></div>
           </div>
 
-          <div class="field"><label>COACH</label><input name="coach" placeholder="Contoh: Coach Adi" /></div>
+          <div class="field"><label>COACH</label><select name="coach_id"><option value="">Pilih coach</option>${db.coaches.filter(c=>c.is_active).map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join("")}</select></div>
 
           <div class="field">
             <label>STATUS</label>
@@ -1121,7 +1494,8 @@
         type: f.type,
         booking_date: f.booking_date,
         booking_time: f.booking_time,
-        coach: f.coach || null,
+        coach_id: f.coach_id || null,
+        coach: f.coach_id ? coachName(f.coach_id) : null,
         status: f.status
       });
 
