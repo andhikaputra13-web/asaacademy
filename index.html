@@ -345,6 +345,39 @@
       box-shadow:0 5px 18px rgba(0,0,0,.18);
     }
 
+
+    /* MEMBER APP — simple & elegant */
+    .member-app{width:min(100%,520px);margin:0 auto;min-height:100vh;padding:22px 18px 105px}
+    .member-header{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:28px}
+    .member-brand{display:flex;align-items:center;gap:11px}
+    .member-logo{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:var(--text);color:var(--brand);font-weight:950;font-size:13px;letter-spacing:-.6px}
+    .member-brand-name{font-size:16px;font-weight:900;letter-spacing:-.03em}
+    .member-top-actions{display:flex;align-items:center;gap:8px}
+    .member-welcome{padding:0 2px 22px}
+    .member-welcome .eyebrow{font-size:11px;color:var(--muted);margin-bottom:7px}
+    .member-welcome h1{margin:0;font-size:27px;line-height:1.08;letter-spacing:-.055em;font-weight:900}
+    .member-page{display:none;animation:fade .18s ease}
+    .member-page.active{display:block}
+    .member-section-title{display:flex;align-items:center;justify-content:space-between;margin:0 2px 13px}
+    .member-section-title h2{margin:0;font-size:18px;letter-spacing:-.035em}
+    .member-session-list{display:grid;gap:10px}
+    .member-session{width:100%;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:20px;padding:17px;display:flex;align-items:center;gap:13px;text-align:left;box-shadow:0 7px 20px rgba(17,24,20,.035)}
+    .member-session.primary{background:var(--brand);color:#111814;border-color:transparent}
+    .member-session-icon{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:var(--surface-soft);font-size:18px;flex:0 0 auto;font-weight:900}
+    .member-session.primary .member-session-icon{background:rgba(17,24,20,.1)}
+    .member-session-info{flex:1}.member-session-info strong{display:block;font-size:14px;margin-bottom:2px}.member-session-info span{font-size:10px;color:var(--muted)}
+    .member-session.primary .member-session-info span{color:#4c5c31}.member-chevron{font-size:18px;opacity:.55}
+    .member-review-list{display:grid;gap:10px}
+    .member-review-card{border:1px solid var(--line);background:var(--surface);border-radius:20px;padding:16px}
+    .member-review-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:12px}
+    .member-review-date{font-size:10px;color:var(--muted);margin-bottom:3px}.member-review-session{font-size:13px;font-weight:850}
+    .member-review-focus{font-size:9px;padding:6px 8px;border-radius:999px;background:var(--surface-soft);white-space:nowrap;font-weight:800}
+    .member-review-stars{font-size:13px;letter-spacing:1px;color:#dca312;margin-bottom:9px}.member-review-note{margin:0;font-size:12px;line-height:1.6;color:var(--muted)}
+    .member-empty{border:1px dashed var(--line);background:var(--surface);border-radius:20px;padding:34px 22px;text-align:center;color:var(--muted);font-size:12px}
+    .member-bottom-nav{position:fixed;z-index:35;bottom:14px;left:50%;transform:translateX(-50%);width:min(calc(100% - 32px),488px);display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:6px;background:var(--surface);border:1px solid var(--line);border-radius:20px;box-shadow:0 14px 35px rgba(17,24,20,.12)}
+    .member-nav-btn{border:0;background:transparent;color:var(--muted);border-radius:14px;padding:10px 8px;font-size:10px;font-weight:800}.member-nav-btn span{display:block;font-size:18px;margin-bottom:2px}.member-nav-btn.active{background:var(--text);color:var(--bg)}
+    .wa-btn{background:#111814;color:#fff;border:0;width:100%;padding:14px 16px;border-radius:16px;font-weight:850;display:flex;align-items:center;justify-content:center;gap:8px}body.dark .wa-btn{background:var(--brand);color:#111814}
+
     @media(min-width:700px){
       body{padding:18px 0}
       .app{background:rgba(255,255,255,.12);border-radius:36px}
@@ -401,6 +434,34 @@
       </div>
     </div>
   </section>
+
+
+  <!-- MEMBER APP -->
+  <div id="memberShell" class="hidden">
+    <main class="member-app">
+      <header class="member-header">
+        <div class="member-brand"><div class="member-logo">ASA</div><div class="member-brand-name">ASA Academy</div></div>
+        <div class="member-top-actions">
+          <button id="memberThemeToggle" class="icon-btn" type="button" title="Ganti tema" aria-label="Ganti tema" onclick="toggleTheme()"></button>
+          <button class="icon-btn" type="button" title="Logout" aria-label="Logout" onclick="logout()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5"></path><path d="M15 12H3"></path><path d="M21 19V5a2 2 0 0 0-2-2h-6"></path></svg></button>
+        </div>
+      </header>
+      <div class="member-welcome"><div class="eyebrow">Halo, <span id="memberName">Member</span></div><h1 id="memberHeading">Ready for your<br>next session?</h1></div>
+      <section id="memberBookingPage" class="member-page active">
+        <div class="member-section-title"><h2>Booking Session</h2></div>
+        <div class="member-session-list">
+          <button class="member-session" onclick="openMemberBooking('Single Session')"><div class="member-session-icon">🎾</div><div class="member-session-info"><strong>Single Session</strong><span>1 coaching session</span></div><div class="member-chevron">›</div></button>
+          <button class="member-session primary" onclick="openMemberBooking('Package 4 Session')"><div class="member-session-icon">4×</div><div class="member-session-info"><strong>Package 4 Session</strong><span>4 coaching sessions</span></div><div class="member-chevron">›</div></button>
+          <button class="member-session" onclick="openMemberBooking('Package 8 Session')"><div class="member-session-icon">8×</div><div class="member-session-info"><strong>Package 8 Session</strong><span>8 coaching sessions</span></div><div class="member-chevron">›</div></button>
+        </div>
+      </section>
+      <section id="memberReviewPage" class="member-page"><div class="member-section-title"><h2>Review Saya</h2></div><div id="memberReviewList" class="member-review-list"></div></section>
+    </main>
+    <nav class="member-bottom-nav">
+      <button class="member-nav-btn active" data-member-page="memberBookingPage"><span>◉</span>Booking</button>
+      <button class="member-nav-btn" data-member-page="memberReviewPage"><span>☆</span>Review</button>
+    </nav>
+  </div>
 
   <!-- APP -->
   <div id="appShell" class="hidden">
@@ -558,13 +619,14 @@
       document.body.classList.toggle("dark", isDark);
       document.documentElement.style.colorScheme = isDark ? "dark" : "light";
 
-      const btn = document.getElementById("themeToggle");
-      if(btn){
-        // Tampilkan icon mode tujuan: bulan saat light, matahari saat dark.
-        btn.innerHTML = isDark ? sunIcon : moonIcon;
-        btn.title = isDark ? "Mode terang" : "Mode gelap";
-        btn.setAttribute("aria-label", isDark ? "Aktifkan mode terang" : "Aktifkan mode gelap");
-      }
+      ["themeToggle","memberThemeToggle"].forEach(id=>{
+        const btn = document.getElementById(id);
+        if(btn){
+          btn.innerHTML = isDark ? sunIcon : moonIcon;
+          btn.title = isDark ? "Mode terang" : "Mode gelap";
+          btn.setAttribute("aria-label", isDark ? "Aktifkan mode terang" : "Aktifkan mode gelap");
+        }
+      });
     }
 
     function toggleTheme(){
@@ -672,50 +734,43 @@
     }
 
     let checkingRole = false;
+    let currentProfile = null;
+    let currentMember = null;
 
     async function handleSignedIn(user){
       if(!user || checkingRole) return;
       checkingRole = true;
 
-      const { data: profile, error: profileError } = await sb
-        .from("profiles")
-        .select("role, full_name, email")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if(profileError){
-        checkingRole = false;
-        await sb.auth.signOut();
-        showAuthMessage("Gagal memeriksa role akun: " + profileError.message);
-        return;
-      }
-
-      if(!profile || profile.role !== "admin"){
-        checkingRole = false;
-        await sb.auth.signOut();
-        currentUser = null;
-        document.getElementById("appShell").classList.add("hidden");
-        document.getElementById("authScreen").classList.remove("hidden");
-        showAuthMessage("Akun ini tidak memiliki akses ke dashboard.");
-        return;
-      }
+      const { data: profile, error: profileError } = await sb.from("profiles").select("role, full_name, email").eq("id", user.id).maybeSingle();
+      if(profileError){checkingRole=false;await sb.auth.signOut();showAuthMessage("Gagal membuka akun: " + profileError.message);return;}
+      if(!profile){checkingRole=false;await sb.auth.signOut();showAuthMessage("Profile akun tidak ditemukan.");return;}
 
       currentUser = user;
+      currentProfile = profile;
       document.getElementById("authScreen").classList.add("hidden");
-      document.getElementById("appShell").classList.remove("hidden");
 
-      const name = profile.full_name || user?.user_metadata?.display_name || "Admin ASA";
-      document.getElementById("adminIdentity").textContent = `${name} · ${user?.email || ""}`;
-
-      await loadAllData();
+      if(profile.role === "admin"){
+        document.getElementById("memberShell").classList.add("hidden");
+        document.getElementById("appShell").classList.remove("hidden");
+        const name = profile.full_name || user?.user_metadata?.display_name || "ASA";
+        document.getElementById("adminIdentity").textContent = `${name} · ${user?.email || ""}`;
+        await loadAllData();
+      }else{
+        document.getElementById("appShell").classList.add("hidden");
+        document.getElementById("memberShell").classList.remove("hidden");
+        await loadMemberData();
+      }
       checkingRole = false;
     }
 
     async function logout(){
       await sb.auth.signOut();
       currentUser = null;
+      currentProfile = null;
+      currentMember = null;
       db = {members:[],bookings:[],reviews:[]};
       document.getElementById("appShell").classList.add("hidden");
+      document.getElementById("memberShell").classList.add("hidden");
       document.getElementById("authScreen").classList.remove("hidden");
       document.getElementById("authPassword").value = "";
       setAuthMode("login");
@@ -737,6 +792,55 @@
       }else{
         document.getElementById("authScreen").classList.remove("hidden");
       }
+    }
+
+
+    // ---------------- MEMBER APP ----------------
+    async function loadMemberData(){
+      const { data: member, error: memberError } = await sb.from("members").select("id,name,email,phone,level,joined").eq("auth_user_id", currentUser.id).maybeSingle();
+      if(memberError){
+        document.getElementById("memberName").textContent = currentProfile?.full_name || "Member";
+        document.getElementById("memberReviewList").innerHTML = `<div class="member-empty">Data member belum terhubung ke akun ini.</div>`;
+        return;
+      }
+      currentMember = member;
+      document.getElementById("memberName").textContent = member?.name || currentProfile?.full_name || "Member";
+      await loadMyReviews();
+    }
+
+    async function loadMyReviews(){
+      const list = document.getElementById("memberReviewList");
+      list.innerHTML = `<div class="member-empty">Memuat review...</div>`;
+      const { data, error } = await sb.from("reviews").select("id,review_date,rating,session,focus,note").order("review_date",{ascending:false});
+      if(error){list.innerHTML = `<div class="member-empty">Review belum dapat dimuat.</div>`;return;}
+      if(!data?.length){list.innerHTML = `<div class="member-empty">Belum ada review coaching.</div>`;return;}
+      list.innerHTML = data.map(r=>`<article class="member-review-card"><div class="member-review-head"><div><div class="member-review-date">${formatDate(r.review_date)}</div><div class="member-review-session">${escapeHtml(r.session)}</div></div><span class="member-review-focus">${escapeHtml(r.focus)}</span></div><div class="member-review-stars">${"★".repeat(Number(r.rating))}${"☆".repeat(5-Number(r.rating))}</div><p class="member-review-note">${escapeHtml(r.note)}</p></article>`).join("");
+    }
+
+    document.querySelectorAll(".member-nav-btn").forEach(btn=>{
+      btn.addEventListener("click",()=>{
+        document.querySelectorAll(".member-nav-btn").forEach(x=>x.classList.remove("active"));
+        btn.classList.add("active");
+        document.querySelectorAll(".member-page").forEach(x=>x.classList.remove("active"));
+        document.getElementById(btn.dataset.memberPage).classList.add("active");
+        document.getElementById("memberHeading").innerHTML = btn.dataset.memberPage === "memberReviewPage" ? "Your coaching<br>progress." : "Ready for your<br>next session?";
+      });
+    });
+
+    function openMemberBooking(type){
+      const today = new Date().toISOString().slice(0,10);
+      showModal("Booking Session", `<form class="form" onsubmit="sendBookingToWhatsApp(event)"><input type="hidden" name="type" value="${attr(type)}"><div class="field"><label>SESSION</label><input value="${attr(type)}" disabled></div><div class="two-col"><div class="field"><label>TANGGAL</label><input type="date" name="date" min="${today}" required></div><div class="field"><label>JAM</label><input type="time" name="time" required></div></div><div class="field"><label>CATATAN</label><textarea name="note" placeholder="Opsional"></textarea></div><button class="wa-btn" type="submit"><span>WhatsApp</span><span>→</span></button></form>`);
+    }
+
+    function sendBookingToWhatsApp(e){
+      e.preventDefault();
+      const f = Object.fromEntries(new FormData(e.target).entries());
+      const name = currentMember?.name || currentProfile?.full_name || "Member";
+      const email = currentUser?.email || "-";
+      const phone = currentMember?.phone || "-";
+      const message = ["Halo ASA Academy, saya ingin booking session.","",`Nama: ${name}`,`Email: ${email}`,`No. HP: ${phone}`,`Session: ${f.type}`,`Tanggal: ${formatDate(f.date)}`,`Jam: ${f.time}`,f.note ? `Catatan: ${f.note}` : ""].filter(Boolean).join("\\n");
+      window.open(`https://wa.me/62882008255252?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
+      closeModal();
     }
 
     // ---------------- DATA ----------------
