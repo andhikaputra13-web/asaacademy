@@ -416,6 +416,16 @@
     .coach-shell-heading{margin:0;font-size:27px;line-height:1.08;letter-spacing:-.055em;font-weight:900}
     .time-select-note{font-size:10px;color:var(--muted);margin-top:6px}
 
+
+    .coach-hour-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+    .coach-hour-btn{border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:14px;padding:10px 5px;text-align:center}
+    .coach-hour-btn strong{display:block;font-size:12px}
+    .coach-hour-btn span{display:block;font-size:8px;color:var(--muted);margin-top:3px}
+    .coach-hour-btn.closed{background:#fff1f1;border-color:#f1cccc;color:#a52b2b}
+    .coach-hour-btn.booked{background:#fff5e8;border-color:#f0d5ae;color:#99631b;opacity:.72}
+    body.dark .coach-hour-btn.closed{background:#382526;border-color:#613638;color:#ffb2b2}
+    body.dark .coach-hour-btn.booked{background:#372e21;border-color:#5b4930;color:#f1c37d}
+
     @media(min-width:700px){
       body{padding:18px 0}
       .app{background:rgba(255,255,255,.12);border-radius:36px}
@@ -617,12 +627,12 @@
       <section id="coachPage" class="page">
         <div class="section-head">
           <div><h2>Coach</h2></div>
-          <button class="text-btn" onclick="openCoachSlot()">+ Slot</button>
+          <button class="text-btn" onclick="openAddCoach()">+ Coach</button>
         </div>
         <div id="coachAdminList" class="coach-grid"></div>
 
         <div class="section-head">
-          <div><h2>Availability</h2></div>
+          <div><h2>Jam Ditutup</h2></div>
         </div>
         <div id="coachSlotAdminList" class="slot-list"></div>
       </section>
@@ -962,10 +972,13 @@
 
       const { data, error } = await sb
         .from("coach_slots")
-        .select("id,coach_id,slot_date,slot_time,is_open")
+        .select("id,coach_id,slot_date,slot_time,is_open,admin_closed")
         .eq("coach_id",coachId)
         .eq("slot_date",date)
         .eq("is_open",true)
+        .eq("admin_closed",false)
+        .gte("slot_time","07:00:00")
+        .lte("slot_time","20:00:00")
         .order("slot_time");
 
       if(error){
@@ -977,7 +990,7 @@
       lastMemberSlots = data || [];
       if(!lastMemberSlots.length){
         select.innerHTML = `<option value="">Tidak ada jam tersedia</option>`;
-        if(note) note.textContent = "Admin belum membuka slot untuk tanggal ini.";
+        if(note) note.textContent = "Coach tidak memiliki jam tersedia pada tanggal ini.";
         return;
       }
 
@@ -1053,9 +1066,14 @@
       currentCoach = coach;
       document.querySelector("#coachShell .coach-shell-title").textContent = coach.name;
 
+      const today = new Date().toISOString().slice(0,10);
+      const horizonDate = new Date();
+      horizonDate.setDate(horizonDate.getDate()+30);
+      const horizon = horizonDate.toISOString().slice(0,10);
+
       const [bookingsRes, slotsRes, membersRes] = await Promise.all([
-        sb.from("bookings").select("*").eq("coach_id",coach.id).order("booking_date").order("booking_time"),
-        sb.from("coach_slots").select("*").eq("coach_id",coach.id).order("slot_date").order("slot_time"),
+        sb.from("bookings").select("*").eq("coach_id",coach.id).gte("booking_date",today).order("booking_date").order("booking_time"),
+        sb.from("coach_slots").select("*").eq("coach_id",coach.id).eq("admin_closed",true).gte("slot_date",today).lte("slot_date",horizon).order("slot_date").order("slot_time"),
         sb.from("members").select("id,name,phone,email")
       ]);
 
@@ -1079,15 +1097,17 @@
 
     function renderCoachAvailability(){
       const list = document.getElementById("coachAvailabilityList");
-      const today = new Date().toISOString().slice(0,10);
-      const rows = coachSlots.filter(s=>s.slot_date >= today);
-      if(!rows.length){ list.innerHTML = `<div class="member-empty">Belum ada availability.</div>`; return; }
-      list.innerHTML = rows.map(s=>{
-        const booked = coachBookings.some(b=>b.slot_id===s.id && b.status!=="Cancelled");
-        const label = booked ? "Booked" : (s.is_open ? "Open" : "Closed");
-        const cls = booked ? "booked" : (s.is_open ? "" : "closed");
-        return `<div class="slot-card"><div class="slot-time">${String(s.slot_time).slice(0,5)}</div><div class="slot-info"><strong>${formatDate(s.slot_date)}</strong><span>${escapeHtml(currentCoach?.name || "Coach")}</span></div><span class="status-dot ${cls}">${label}</span></div>`;
-      }).join("");
+      const rows = coachSlots || [];
+      if(!rows.length){
+        list.innerHTML = `<div class="member-empty">Semua jam 07.00–20.00 tersedia.</div>`;
+        return;
+      }
+      list.innerHTML = rows.map(s=>`
+        <div class="slot-card">
+          <div class="slot-time">${String(s.slot_time).slice(0,5)}</div>
+          <div class="slot-info"><strong>${formatDate(s.slot_date)}</strong><span>Tidak available</span></div>
+          <span class="status-dot closed">Closed</span>
+        </div>`).join("");
     }
 
     document.querySelectorAll(".coach-nav-btn").forEach(btn=>{
@@ -1096,7 +1116,7 @@
         btn.classList.add("active");
         document.querySelectorAll("#coachShell .member-page").forEach(x=>x.classList.remove("active"));
         document.getElementById(btn.dataset.coachPage).classList.add("active");
-        document.getElementById("coachHeading").innerHTML = btn.dataset.coachPage === "coachAvailabilityPage" ? "Your available<br>hours." : "Your upcoming<br>sessions.";
+        document.getElementById("coachHeading").innerHTML = btn.dataset.coachPage === "coachAvailabilityPage" ? "Your unavailable<br>hours." : "Your upcoming<br>sessions.";
       });
     });
 
@@ -1104,12 +1124,17 @@
     async function loadAllData(){
       showLoading();
 
+      const today = new Date().toISOString().slice(0,10);
+      const horizonDate = new Date();
+      horizonDate.setDate(horizonDate.getDate()+30);
+      const horizon = horizonDate.toISOString().slice(0,10);
+
       const [membersRes, bookingsRes, reviewsRes, coachesRes, slotsRes, accountsRes] = await Promise.all([
         sb.from("members").select("*").order("created_at",{ascending:false}),
         sb.from("bookings").select("*").order("booking_date",{ascending:false}).order("booking_time",{ascending:false}),
         sb.from("reviews").select("*").order("review_date",{ascending:false}),
         sb.from("coaches").select("*").order("created_at"),
-        sb.from("coach_slots").select("*").order("slot_date").order("slot_time"),
+        sb.from("coach_slots").select("*").eq("admin_closed",true).gte("slot_date",today).lte("slot_date",horizon).order("slot_date").order("slot_time"),
         sb.from("profiles").select("id,email,full_name,role,created_at").order("created_at",{ascending:false})
       ]);
 
@@ -1293,6 +1318,7 @@
         document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
         activePage = btn.dataset.page;
         document.getElementById(activePage).classList.add("active");
+        document.getElementById("fab").classList.toggle("hidden", activePage === "coachPage");
       });
     });
 
@@ -1311,7 +1337,6 @@
       if(activePage==="bookingPage") openBooking();
       if(activePage==="reviewPage") openReview();
       if(activePage==="memberPage") openAccount("member");
-      if(activePage==="coachPage") openCoachSlot();
       if(activePage==="accountPage") openAccount();
     }
 
@@ -1452,20 +1477,66 @@
     }
 
     // ---------------- ADMIN: COACH ----------------
+    function openAddCoach(){
+      showModal("Tambah Coach", `
+        <form class="form" onsubmit="saveNewCoach(event)">
+          <div class="field">
+            <label>NAMA COACH</label>
+            <input name="name" required>
+          </div>
+          <button id="addCoachBtn" class="primary-btn lime" type="submit">Tambah Coach</button>
+        </form>
+      `);
+    }
+
+    async function saveNewCoach(e){
+      e.preventDefault();
+      const form = e.target;
+      const f = Object.fromEntries(new FormData(form).entries());
+      const name = String(f.name || "").trim();
+      if(!name) return;
+
+      const btn = document.getElementById("addCoachBtn");
+      if(btn){
+        btn.disabled = true;
+        btn.textContent = "Menambahkan...";
+      }
+
+      const { error } = await sb.from("coaches").insert({
+        name,
+        is_active: true
+      });
+
+      if(error){
+        if(btn){
+          btn.disabled = false;
+          btn.textContent = "Tambah Coach";
+        }
+        return alert("Gagal menambahkan coach: " + error.message);
+      }
+
+      closeModal();
+      await loadAllData();
+      alert("Coach berhasil ditambahkan. Jam 07.00–20.00 sudah otomatis tersedia.");
+    }
+
     function renderCoachAdmin(){
       const list = document.getElementById("coachAdminList");
       if(!list) return;
       if(!db.coaches.length){ list.innerHTML = `<div class="empty">Belum ada coach.</div>`; return; }
+
       list.innerHTML = db.coaches.map((c,i)=>`
         <div class="coach-card">
           <div class="coach-card-top">
             <div class="coach-avatar">${i+1}</div>
-            <div class="grow"><div class="coach-name">${escapeHtml(c.name)}</div><div class="coach-meta">${c.auth_user_id ? "Akun coach terhubung" : "Belum terhubung akun login"}</div></div>
+            <div class="grow">
+              <div class="coach-name">${escapeHtml(c.name)}</div>
+              <div class="coach-meta">Available 07.00–20.00</div>
+            </div>
             <span class="badge ${c.is_active ? "" : "dark"}">${c.is_active ? "Active" : "Inactive"}</span>
           </div>
           <div class="member-actions">
             <button class="mini-btn" onclick="openCoachEdit('${c.id}')">Edit</button>
-            <button class="mini-btn" onclick="openCoachSlot('${c.id}')">+ Slot</button>
             <button class="mini-btn" onclick="toggleCoachActive('${c.id}',${c.is_active})">${c.is_active ? "Nonaktifkan" : "Aktifkan"}</button>
           </div>
         </div>`).join("");
@@ -1474,48 +1545,121 @@
     function renderCoachSlotsAdmin(){
       const list = document.getElementById("coachSlotAdminList");
       if(!list) return;
-      const today = new Date().toISOString().slice(0,10);
-      const rows = db.slots.filter(s=>s.slot_date >= today).slice(0,80);
-      if(!rows.length){ list.innerHTML = `<div class="empty">Belum ada slot availability.</div>`; return; }
-      list.innerHTML = rows.map(s=>{
-        const booking = db.bookings.find(b=>b.slot_id===s.id && b.status!=="Cancelled");
-        const label = booking ? "Booked" : (s.is_open ? "Open" : "Closed");
-        const cls = booking ? "booked" : (s.is_open ? "" : "closed");
-        return `<div class="slot-card"><div class="slot-time">${String(s.slot_time).slice(0,5)}</div><div class="slot-info"><strong>${escapeHtml(coachName(s.coach_id))}</strong><span>${formatDate(s.slot_date)}</span></div><span class="status-dot ${cls}">${label}</span>${booking ? "" : `<button class="mini-btn" onclick="toggleCoachSlot('${s.id}',${s.is_open})">${s.is_open ? "Tutup" : "Buka"}</button>`}</div>`;
-      }).join("");
-    }
-
-    function openCoachSlot(preselected=""){
-      if(!db.coaches.length) return alert("Coach belum tersedia.");
-      const today = new Date().toISOString().slice(0,10);
-      const options = db.coaches.map(c=>`<option value="${c.id}" ${c.id===preselected?"selected":""}>${escapeHtml(c.name)}</option>`).join("");
-      showModal("Tambah Availability", `<form class="form" onsubmit="saveCoachSlot(event)"><div class="field"><label>COACH</label><select name="coach_id" required><option value="">Pilih coach</option>${options}</select></div><div class="two-col"><div class="field"><label>TANGGAL</label><input type="date" name="slot_date" min="${today}" required></div><div class="field"><label>JAM</label><input type="time" name="slot_time" required></div></div><button class="primary-btn" type="submit">Buka Slot</button></form>`);
-    }
-
-    async function saveCoachSlot(e){
-      e.preventDefault();
-      const f = Object.fromEntries(new FormData(e.target).entries());
-      const { error } = await sb.from("coach_slots").upsert({coach_id:f.coach_id,slot_date:f.slot_date,slot_time:f.slot_time,is_open:true},{onConflict:"coach_id,slot_date,slot_time"});
-      if(error) return alert("Gagal menyimpan slot: " + error.message);
-      closeModal(); await loadAllData();
-    }
-
-    async function toggleCoachSlot(id,isOpen){
-      const { error } = await sb.from("coach_slots").update({is_open:!isOpen,updated_at:new Date().toISOString()}).eq("id",id);
-      if(error) return alert("Gagal mengubah slot: " + error.message);
-      await loadAllData();
+      const rows = db.slots || [];
+      if(!rows.length){
+        list.innerHTML = `<div class="empty">Tidak ada jam yang ditutup dalam 30 hari ke depan.</div>`;
+        return;
+      }
+      list.innerHTML = rows.slice(0,100).map(s=>`
+        <div class="slot-card">
+          <div class="slot-time">${String(s.slot_time).slice(0,5)}</div>
+          <div class="slot-info"><strong>${escapeHtml(coachName(s.coach_id))}</strong><span>${formatDate(s.slot_date)}</span></div>
+          <span class="status-dot closed">Closed</span>
+        </div>`).join("");
     }
 
     function openCoachEdit(id){
-      const c = db.coaches.find(x=>x.id===id); if(!c) return;
-      showModal("Edit Coach", `<form class="form" onsubmit="saveCoachEdit(event,'${id}')"><div class="field"><label>NAMA COACH</label><input name="name" value="${attr(c.name)}" required></div><button class="primary-btn" type="submit">Simpan</button></form>`);
+      const c = db.coaches.find(x=>x.id===id);
+      if(!c) return;
+      const today = new Date().toISOString().slice(0,10);
+
+      showModal("Edit Coach", `
+        <form class="form" onsubmit="saveCoachEdit(event,'${id}')">
+          <div class="field">
+            <label>NAMA COACH</label>
+            <input name="name" value="${attr(c.name)}" required>
+          </div>
+          <button class="primary-btn" type="submit">Simpan Nama</button>
+        </form>
+
+        <div style="height:22px"></div>
+        <div class="section-head" style="margin-bottom:12px">
+          <div><h2 style="font-size:16px">Tutup Jam</h2></div>
+        </div>
+        <div class="field">
+          <label>TANGGAL</label>
+          <input id="coachEditDate" type="date" min="${today}" value="${today}" onchange="loadCoachEditHours('${id}')">
+        </div>
+        <div id="coachHourGrid" class="coach-hour-grid"></div>
+      `);
+
+      loadCoachEditHours(id);
+    }
+
+    async function loadCoachEditHours(coachId){
+      const date = document.getElementById("coachEditDate")?.value;
+      const grid = document.getElementById("coachHourGrid");
+      if(!date || !grid) return;
+
+      grid.innerHTML = `<div class="loading">Memuat jam...</div>`;
+
+      const [slotsRes, bookingsRes] = await Promise.all([
+        sb.from("coach_slots")
+          .select("id,coach_id,slot_date,slot_time,is_open,admin_closed")
+          .eq("coach_id",coachId)
+          .eq("slot_date",date)
+          .gte("slot_time","07:00:00")
+          .lte("slot_time","20:00:00")
+          .order("slot_time"),
+        sb.from("bookings")
+          .select("id,slot_id,booking_time,status")
+          .eq("coach_id",coachId)
+          .eq("booking_date",date)
+          .neq("status","Cancelled")
+      ]);
+
+      if(slotsRes.error){
+        grid.innerHTML = `<div class="error-box">${escapeHtml(slotsRes.error.message)}</div>`;
+        return;
+      }
+
+      const bookedIds = new Set((bookingsRes.data || []).map(b=>b.slot_id).filter(Boolean));
+      const slots = slotsRes.data || [];
+
+      grid.innerHTML = slots.map(s=>{
+        const booked = bookedIds.has(s.id);
+        const closed = !!s.admin_closed;
+        const cls = booked ? " booked" : (closed ? " closed" : "");
+        const state = booked ? "Booked" : (closed ? "Closed" : "Open");
+        return `<button type="button" class="coach-hour-btn${cls}" ${booked ? "disabled" : ""} onclick="toggleCoachHour('${s.id}',${closed},'${coachId}')"><strong>${String(s.slot_time).slice(0,5)}</strong><span>${state}</span></button>`;
+      }).join("");
+    }
+
+    async function toggleCoachHour(slotId,isClosed,coachId){
+      const closing = !isClosed;
+      const { data, error } = await sb
+        .from("coach_slots")
+        .update({
+          admin_closed: closing,
+          is_open: !closing,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id",slotId)
+        .select("*")
+        .single();
+
+      if(error) return alert("Gagal mengubah jam: " + error.message);
+
+      if(closing){
+        if(!db.slots.some(s=>s.id===data.id)) db.slots.push(data);
+      }else{
+        db.slots = db.slots.filter(s=>s.id!==data.id);
+      }
+      db.slots.sort((a,b)=>`${a.slot_date} ${a.slot_time}`.localeCompare(`${b.slot_date} ${b.slot_time}`));
+      renderCoachSlotsAdmin();
+      await loadCoachEditHours(coachId);
     }
 
     async function saveCoachEdit(e,id){
-      e.preventDefault(); const f = Object.fromEntries(new FormData(e.target).entries());
+      e.preventDefault();
+      const f = Object.fromEntries(new FormData(e.target).entries());
       const { error } = await sb.from("coaches").update({name:f.name,updated_at:new Date().toISOString()}).eq("id",id);
       if(error) return alert("Gagal mengubah coach: " + error.message);
-      closeModal(); await loadAllData();
+      const coach = db.coaches.find(c=>c.id===id);
+      if(coach) coach.name=f.name;
+      renderCoachAdmin();
+      renderCoachSlotsAdmin();
+      alert("Nama coach berhasil disimpan.");
     }
 
     async function toggleCoachActive(id,isActive){
