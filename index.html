@@ -1217,8 +1217,10 @@
       const email = currentUser?.email || "-";
       const phone = currentMember?.phone || "-";
       const message = [
-        "Halo ASA Academy, saya ingin booking session.",
+        "Halo ASA Academy 👋",
+        "Saya ingin melakukan booking session.",
         "",
+        "*DETAIL BOOKING*",
         `Nama: ${name}`,
         `Email: ${email}`,
         `No. HP: ${phone}`,
@@ -1226,8 +1228,10 @@
         `Coach: ${coach.name}`,
         `Tanggal: ${formatDate(f.date)}`,
         `Jam: ${String(slot.slot_time).slice(0,5)}`,
-        f.note ? `Catatan: ${f.note}` : ""
-      ].filter(Boolean).join("\\n");
+        f.note ? `Catatan: ${f.note}` : "",
+        "",
+        "Mohon konfirmasi booking saya. Terima kasih 🙏"
+      ].filter(Boolean).join("\n");
 
       window.open(`https://wa.me/62882008255252?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
       closeModal();
