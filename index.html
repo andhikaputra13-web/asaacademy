@@ -9,6 +9,12 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
+    html{
+      overscroll-behavior-y:contain;
+    }
+    body{
+      overscroll-behavior-y:contain;
+    }
     :root{
       --bg:#f3f4f0;
       --card:#ffffff;
@@ -2406,70 +2412,148 @@
       const indicator = document.getElementById("pullRefresh");
       const icon = document.getElementById("pullRefreshIcon");
       const text = document.getElementById("pullRefreshText");
-      if(!indicator || !icon || !text) return;
+      if(!indicator || !icon || !text){
+        console.warn("Pull-to-refresh UI belum tersedia.");
+        return;
+      }
 
       let startY = 0;
-      let pulling = false;
+      let lastY = 0;
       let distance = 0;
+      let pulling = false;
       let refreshing = false;
-      const threshold = 82;
 
-      document.addEventListener("touchstart",(e)=>{
-        if(refreshing) return;
-        if(window.scrollY <= 0 && e.touches.length === 1){
-          startY = e.touches[0].clientY;
-          pulling = true;
-          distance = 0;
+      const threshold = 72;
+      const maxDistance = 130;
+
+      const isAtTop = () => {
+        const scroller = document.scrollingElement || document.documentElement;
+        return (scroller?.scrollTop || window.scrollY || 0) <= 1;
+      };
+
+      const resetIndicator = ()=>{
+        indicator.classList.remove("visible","refreshing");
+        icon.style.transform = "";
+        text.textContent = "Tarik untuk refresh";
+        pulling = false;
+        distance = 0;
+      };
+
+      const beginPull = (y)=>{
+        if(refreshing || !isAtTop()) return;
+        startY = y;
+        lastY = y;
+        distance = 0;
+        pulling = true;
+      };
+
+      const movePull = (y, event)=>{
+        if(!pulling || refreshing) return;
+
+        lastY = y;
+        const rawDistance = y - startY;
+
+        // Jika user justru menggeser ke atas, batalkan gesture.
+        if(rawDistance <= 0){
+          resetIndicator();
+          return;
         }
+
+        // Hanya ambil alih gesture jika halaman memang masih di posisi paling atas.
+        if(!isAtTop()){
+          resetIndicator();
+          return;
+        }
+
+        if(event?.cancelable){
+          event.preventDefault();
+        }
+
+        // Resistance supaya tarikan terasa natural.
+        distance = Math.min(maxDistance, rawDistance * 0.62);
+        const progress = Math.min(distance / threshold, 1);
+
+        indicator.classList.add("visible");
+        icon.style.transform = `rotate(${Math.round(progress * 220)}deg)`;
+        text.textContent = distance >= threshold
+          ? "Lepas untuk refresh"
+          : "Tarik untuk refresh";
+      };
+
+      const finishPull = async ()=>{
+        if(!pulling || refreshing) return;
+
+        pulling = false;
+
+        if(distance < threshold || !currentUser){
+          resetIndicator();
+          return;
+        }
+
+        refreshing = true;
+        indicator.classList.add("visible","refreshing");
+        icon.style.transform = "";
+        text.textContent = "Memperbarui...";
+
+        try{
+          await refreshCurrentView(false);
+          showToast("Data berhasil diperbarui");
+        }catch(err){
+          console.error("Pull refresh:",err);
+          showToast("Gagal memperbarui data");
+        }finally{
+          setTimeout(()=>{
+            refreshing = false;
+            resetIndicator();
+          },450);
+        }
+      };
+
+      // Mobile touch
+      document.addEventListener("touchstart",(e)=>{
+        if(e.touches.length !== 1) return;
+        beginPull(e.touches[0].clientY);
       },{passive:true});
 
       document.addEventListener("touchmove",(e)=>{
-        if(!pulling || refreshing || e.touches.length !== 1) return;
+        if(e.touches.length !== 1) return;
+        movePull(e.touches[0].clientY,e);
+      },{passive:false});
 
-        distance = Math.max(0,e.touches[0].clientY - startY);
-        if(distance <= 0) return;
+      document.addEventListener("touchend",finishPull,{passive:true});
+      document.addEventListener("touchcancel",resetIndicator,{passive:true});
 
-        const progress = Math.min(distance / threshold,1);
-        indicator.classList.add("visible");
-        icon.style.transform = `rotate(${Math.round(progress*180)}deg)`;
-        text.textContent = distance >= threshold ? "Lepas untuk refresh" : "Tarik untuk refresh";
-      },{passive:true});
+      // Mouse support, useful when testing from desktop responsive mode.
+      let mouseDown = false;
 
-      document.addEventListener("touchend",async ()=>{
-        if(!pulling || refreshing) return;
-        pulling = false;
+      document.addEventListener("mousedown",(e)=>{
+        if(e.button !== 0 || !isAtTop()) return;
+        mouseDown = true;
+        beginPull(e.clientY);
+      });
 
-        if(distance >= threshold && currentUser){
-          refreshing = true;
-          indicator.classList.add("visible","refreshing");
-          icon.style.transform = "";
-          text.textContent = "Memperbarui...";
+      document.addEventListener("mousemove",(e)=>{
+        if(!mouseDown) return;
+        movePull(e.clientY,e);
+      });
 
-          try{
-            await refreshCurrentView(false);
-            showToast("Data berhasil diperbarui");
-          }catch(err){
-            console.error("Pull refresh:",err);
-          }finally{
-            setTimeout(()=>{
-              indicator.classList.remove("visible","refreshing");
-              text.textContent = "Tarik untuk refresh";
-              refreshing = false;
-              distance = 0;
-            },350);
-          }
-        }else{
-          indicator.classList.remove("visible");
-          icon.style.transform = "";
-          text.textContent = "Tarik untuk refresh";
-          distance = 0;
-        }
-      },{passive:true});
+      document.addEventListener("mouseup",async ()=>{
+        if(!mouseDown) return;
+        mouseDown = false;
+        await finishPull();
+      });
     }
 
-    initPullToRefresh();
     initTheme();
     init();
+
+    // Indicator pull-to-refresh berada setelah script ini di HTML.
+    // Jalankan setelah seluruh DOM selesai diparsing.
+    if(document.readyState === "loading"){
+      document.addEventListener("DOMContentLoaded", initPullToRefresh, {once:true});
+    }else{
+      initPullToRefresh();
+    }
   </script>
 
   <div id="pullRefresh" class="pull-refresh" aria-hidden="true">
