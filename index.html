@@ -599,7 +599,13 @@
 
       <section id="coachAvailabilityPage" class="member-page">
         <div class="member-section-title"><h2>Availability</h2></div>
-        <div id="coachAvailabilityList" class="slot-list"></div>
+
+        <div class="field">
+          <label>TANGGAL</label>
+          <input id="coachAvailabilityDate" type="date" onchange="loadCoachAvailabilityHours()">
+        </div>
+
+        <div id="coachAvailabilityList" class="coach-hour-grid"></div>
       </section>
     </main>
 
@@ -1151,11 +1157,12 @@
 
       const { data, error } = await sb
         .from("coach_slots")
-        .select("id,coach_id,slot_date,slot_time,is_open,admin_closed")
+        .select("id,coach_id,slot_date,slot_time,is_open,admin_closed,coach_closed")
         .eq("coach_id",coachId)
         .eq("slot_date",date)
         .eq("is_open",true)
         .eq("admin_closed",false)
+        .eq("coach_closed",false)
         .gte("slot_time","07:00:00")
         .lte("slot_time","20:00:00")
         .order("slot_time");
@@ -1239,10 +1246,17 @@
 
     // ---------------- COACH APP ----------------
     async function loadCoachData(){
-      const { data: coach, error } = await sb.from("coaches").select("id,name,is_active").eq("auth_user_id",currentUser.id).maybeSingle();
+      const { data: coach, error } = await sb
+        .from("coaches")
+        .select("id,name,is_active")
+        .eq("auth_user_id",currentUser.id)
+        .maybeSingle();
+
       if(error || !coach){
-        document.getElementById("coachScheduleList").innerHTML = `<div class="member-empty">Akun coach belum terhubung ke data coach.</div>`;
-        document.getElementById("coachAvailabilityList").innerHTML = `<div class="member-empty">Hubungi admin untuk menghubungkan akun.</div>`;
+        document.getElementById("coachScheduleList").innerHTML =
+          `<div class="member-empty">Akun coach belum terhubung ke data coach.</div>`;
+        document.getElementById("coachAvailabilityList").innerHTML =
+          `<div class="member-empty">Hubungi admin untuk menghubungkan akun.</div>`;
         return;
       }
 
@@ -1250,47 +1264,156 @@
       document.querySelector("#coachShell .coach-shell-title").textContent = coach.name;
 
       const today = new Date().toISOString().slice(0,10);
-      const horizonDate = new Date();
-      horizonDate.setDate(horizonDate.getDate()+30);
-      const horizon = horizonDate.toISOString().slice(0,10);
+      const dateInput = document.getElementById("coachAvailabilityDate");
+      if(dateInput){
+        dateInput.min = today;
+        if(!dateInput.value) dateInput.value = today;
+      }
 
-      const [bookingsRes, slotsRes, membersRes] = await Promise.all([
-        sb.from("bookings").select("*").eq("coach_id",coach.id).gte("booking_date",today).order("booking_date").order("booking_time"),
-        sb.from("coach_slots").select("*").eq("coach_id",coach.id).eq("admin_closed",true).gte("slot_date",today).lte("slot_date",horizon).order("slot_date").order("slot_time"),
-        sb.from("members").select("id,name,phone,email")
+      const [bookingsRes, membersRes] = await Promise.all([
+        sb.from("bookings")
+          .select("*")
+          .eq("coach_id",coach.id)
+          .gte("booking_date",today)
+          .order("booking_date")
+          .order("booking_time"),
+        sb.from("members")
+          .select("id,name,phone,email")
       ]);
 
       coachBookings = bookingsRes.data || [];
-      coachSlots = slotsRes.data || [];
       coachMembers = membersRes.data || [];
+
       renderCoachSchedule();
-      renderCoachAvailability();
+      await loadCoachAvailabilityHours();
     }
 
     function renderCoachSchedule(){
       const list = document.getElementById("coachScheduleList");
       const today = new Date().toISOString().slice(0,10);
-      const rows = coachBookings.filter(b=>b.booking_date >= today && b.status !== "Cancelled");
-      if(!rows.length){ list.innerHTML = `<div class="member-empty">Belum ada jadwal coaching.</div>`; return; }
+      const rows = coachBookings.filter(
+        b => b.booking_date >= today && b.status !== "Cancelled"
+      );
+
+      if(!rows.length){
+        list.innerHTML = `<div class="member-empty">Belum ada jadwal coaching.</div>`;
+        return;
+      }
+
       list.innerHTML = rows.map(b=>{
         const m = coachMembers.find(x=>x.id===b.member_id);
-        return `<div class="slot-card"><div class="slot-time">${String(b.booking_time).slice(0,5)}</div><div class="slot-info"><strong>${escapeHtml(m?.name || "Member")}</strong><span>${formatDate(b.booking_date)} · ${escapeHtml(b.type)}</span></div><span class="status-dot">${escapeHtml(b.status)}</span></div>`;
+
+        return `
+          <div class="slot-card">
+            <div class="slot-time">${String(b.booking_time).slice(0,5)}</div>
+            <div class="slot-info">
+              <strong>${escapeHtml(m?.name || "Member")}</strong>
+              <span>${formatDate(b.booking_date)} · ${escapeHtml(b.type)}</span>
+            </div>
+            <span class="status-dot">${escapeHtml(b.status)}</span>
+          </div>
+        `;
       }).join("");
     }
 
-    function renderCoachAvailability(){
-      const list = document.getElementById("coachAvailabilityList");
-      const rows = coachSlots || [];
-      if(!rows.length){
-        list.innerHTML = `<div class="member-empty">Semua jam 07.00–20.00 tersedia.</div>`;
+    async function loadCoachAvailabilityHours(){
+      const grid = document.getElementById("coachAvailabilityList");
+      const date = document.getElementById("coachAvailabilityDate")?.value;
+
+      if(!grid || !date || !currentCoach?.id) return;
+
+      grid.innerHTML = `<div class="loading">Memuat jam...</div>`;
+
+      const [slotsRes, bookingsRes] = await Promise.all([
+        sb.from("coach_slots")
+          .select("id,coach_id,slot_date,slot_time,is_open,admin_closed,coach_closed")
+          .eq("coach_id",currentCoach.id)
+          .eq("slot_date",date)
+          .gte("slot_time","07:00:00")
+          .lte("slot_time","20:00:00")
+          .order("slot_time"),
+        sb.from("bookings")
+          .select("id,slot_id,status")
+          .eq("coach_id",currentCoach.id)
+          .eq("booking_date",date)
+          .neq("status","Cancelled")
+      ]);
+
+      if(slotsRes.error){
+        grid.innerHTML = `<div class="member-empty">Gagal memuat availability.</div>`;
         return;
       }
-      list.innerHTML = rows.map(s=>`
-        <div class="slot-card">
-          <div class="slot-time">${String(s.slot_time).slice(0,5)}</div>
-          <div class="slot-info"><strong>${formatDate(s.slot_date)}</strong><span>Tidak available</span></div>
-          <span class="status-dot closed">Closed</span>
-        </div>`).join("");
+
+      const bookedIds = new Set(
+        (bookingsRes.data || []).map(b=>b.slot_id).filter(Boolean)
+      );
+
+      const slots = slotsRes.data || [];
+
+      if(!slots.length){
+        grid.innerHTML = `<div class="member-empty">Jam belum tersedia untuk tanggal ini.</div>`;
+        return;
+      }
+
+      grid.innerHTML = slots.map(s=>{
+        const booked = bookedIds.has(s.id);
+        const adminClosed = !!s.admin_closed;
+        const coachClosed = !!s.coach_closed;
+
+        let state = "Open";
+        let cls = "";
+        let disabled = false;
+
+        if(booked){
+          state = "Booked";
+          cls = " booked";
+          disabled = true;
+        }else if(adminClosed){
+          state = "Admin Closed";
+          cls = " closed";
+          disabled = true;
+        }else if(coachClosed){
+          state = "Closed";
+          cls = " closed";
+        }
+
+        return `
+          <button
+            type="button"
+            class="coach-hour-btn${cls}"
+            ${disabled ? "disabled" : ""}
+            onclick="toggleMyCoachHour('${s.id}',${coachClosed})"
+          >
+            <strong>${String(s.slot_time).slice(0,5)}</strong>
+            <span>${state}</span>
+          </button>
+        `;
+      }).join("");
+    }
+
+    async function toggleMyCoachHour(slotId,isCoachClosed){
+      const closing = !isCoachClosed;
+
+      const { error } = await sb
+        .from("coach_slots")
+        .update({
+          coach_closed: closing,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id",slotId);
+
+      if(error){
+        showToast("Gagal mengubah availability");
+        return;
+      }
+
+      await loadCoachAvailabilityHours();
+
+      showToast(
+        closing
+          ? "Jam berhasil ditutup"
+          : "Jam berhasil dibuka"
+      );
     }
 
     document.querySelectorAll(".coach-nav-btn").forEach(btn=>{
@@ -1299,7 +1422,16 @@
         btn.classList.add("active");
         document.querySelectorAll("#coachShell .member-page").forEach(x=>x.classList.remove("active"));
         document.getElementById(btn.dataset.coachPage).classList.add("active");
-        document.getElementById("coachHeading").innerHTML = btn.dataset.coachPage === "coachAvailabilityPage" ? "Your unavailable<br>hours." : "Your upcoming<br>sessions.";
+
+        const isAvailability = btn.dataset.coachPage === "coachAvailabilityPage";
+
+        document.getElementById("coachHeading").innerHTML = isAvailability
+          ? "Manage your<br>availability."
+          : "Your upcoming<br>sessions.";
+
+        if(isAvailability){
+          loadCoachAvailabilityHours();
+        }
       });
     });
 
@@ -1317,7 +1449,7 @@
         sb.from("bookings").select("*").order("booking_date",{ascending:false}).order("booking_time",{ascending:false}),
         sb.from("reviews").select("*").order("review_date",{ascending:false}),
         sb.from("coaches").select("*").order("created_at"),
-        sb.from("coach_slots").select("*").eq("admin_closed",true).gte("slot_date",today).lte("slot_date",horizon).order("slot_date").order("slot_time"),
+        sb.from("coach_slots").select("*").or("admin_closed.eq.true,coach_closed.eq.true").gte("slot_date",today).lte("slot_date",horizon).order("slot_date").order("slot_time"),
         sb.from("profiles").select("id,email,full_name,role,created_at").order("created_at",{ascending:false})
       ]);
 
@@ -1961,12 +2093,22 @@
         list.innerHTML = `<div class="empty">Tidak ada jam yang ditutup dalam 30 hari ke depan.</div>`;
         return;
       }
-      list.innerHTML = rows.slice(0,100).map(s=>`
-        <div class="slot-card">
-          <div class="slot-time">${String(s.slot_time).slice(0,5)}</div>
-          <div class="slot-info"><strong>${escapeHtml(coachName(s.coach_id))}</strong><span>${formatDate(s.slot_date)}</span></div>
-          <span class="status-dot closed">Closed</span>
-        </div>`).join("");
+      list.innerHTML = rows.slice(0,100).map(s=>{
+        const label = s.admin_closed && s.coach_closed
+          ? "Admin + Coach"
+          : (s.admin_closed ? "Admin Closed" : "Coach Closed");
+
+        return `
+          <div class="slot-card">
+            <div class="slot-time">${String(s.slot_time).slice(0,5)}</div>
+            <div class="slot-info">
+              <strong>${escapeHtml(coachName(s.coach_id))}</strong>
+              <span>${formatDate(s.slot_date)}</span>
+            </div>
+            <span class="status-dot closed">${label}</span>
+          </div>
+        `;
+      }).join("");
     }
 
     function openCoachEdit(id){
@@ -2006,7 +2148,7 @@
 
       const [slotsRes, bookingsRes] = await Promise.all([
         sb.from("coach_slots")
-          .select("id,coach_id,slot_date,slot_time,is_open,admin_closed")
+          .select("id,coach_id,slot_date,slot_time,is_open,admin_closed,coach_closed")
           .eq("coach_id",coachId)
           .eq("slot_date",date)
           .gte("slot_time","07:00:00")
@@ -2029,10 +2171,31 @@
 
       grid.innerHTML = slots.map(s=>{
         const booked = bookedIds.has(s.id);
-        const closed = !!s.admin_closed;
+        const adminClosed = !!s.admin_closed;
+        const coachClosed = !!s.coach_closed;
+
+        const closed = adminClosed || coachClosed;
         const cls = booked ? " booked" : (closed ? " closed" : "");
-        const state = booked ? "Booked" : (closed ? "Closed" : "Open");
-        return `<button type="button" class="coach-hour-btn${cls}" ${booked ? "disabled" : ""} onclick="toggleCoachHour('${s.id}',${closed},'${coachId}')"><strong>${String(s.slot_time).slice(0,5)}</strong><span>${state}</span></button>`;
+
+        let state = "Open";
+        if(booked) state = "Booked";
+        else if(adminClosed && coachClosed) state = "Admin + Coach";
+        else if(adminClosed) state = "Admin Closed";
+        else if(coachClosed) state = "Coach Closed";
+
+        const disabled = booked || (coachClosed && !adminClosed);
+
+        return `
+          <button
+            type="button"
+            class="coach-hour-btn${cls}"
+            ${disabled ? "disabled" : ""}
+            onclick="toggleCoachHour('${s.id}',${adminClosed},'${coachId}')"
+          >
+            <strong>${String(s.slot_time).slice(0,5)}</strong>
+            <span>${state}</span>
+          </button>
+        `;
       }).join("");
     }
 
@@ -2042,7 +2205,6 @@
         .from("coach_slots")
         .update({
           admin_closed: closing,
-          is_open: !closing,
           updated_at: new Date().toISOString()
         })
         .eq("id",slotId)
@@ -2051,8 +2213,10 @@
 
       if(error) return alert("Gagal mengubah jam: " + error.message);
 
-      if(closing){
-        if(!db.slots.some(s=>s.id===data.id)) db.slots.push(data);
+      if(data.admin_closed || data.coach_closed){
+        const existing = db.slots.findIndex(s=>s.id===data.id);
+        if(existing >= 0) db.slots[existing] = data;
+        else db.slots.push(data);
       }else{
         db.slots = db.slots.filter(s=>s.id!==data.id);
       }
