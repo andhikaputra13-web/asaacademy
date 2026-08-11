@@ -2089,6 +2089,7 @@
           <div class="member-actions">
             <button class="mini-btn" onclick="openCoachEdit('${c.id}')">Edit</button>
             <button class="mini-btn" onclick="toggleCoachActive('${c.id}',${c.is_active})">${c.is_active ? "Nonaktifkan" : "Aktifkan"}</button>
+            <button class="mini-btn danger" onclick="deleteCoach('${c.id}','${attr(c.name)}',${!!c.auth_user_id})">Hapus</button>
           </div>
         </div>`).join("");
     }
@@ -2267,8 +2268,31 @@
       const { error } = await sb.from("coaches").update({is_active:!isActive,updated_at:new Date().toISOString()}).eq("id",id);
       if(error) return alert("Gagal mengubah coach: " + error.message);
       await loadAllData();
-      showToast("Status coach berhasil diperbarui");
       showToast(isActive ? "Coach dinonaktifkan" : "Coach diaktifkan");
+    }
+
+    async function deleteCoach(id,name,hasAccount){
+      const detail = hasAccount
+        ? `Coach "${name}" dan akun login Coach akan dihapus. Histori booking tetap tersimpan.`
+        : `Coach "${name}" akan dihapus. Histori booking tetap tersimpan.`;
+
+      if(!confirm(`${detail}\n\nLanjutkan hapus Coach?`)) return;
+
+      try{
+        const data = await invokeSecureFunction("admin-delete-coach", {
+          coach_id: id
+        });
+
+        await loadAllData();
+
+        showToast(
+          data?.account_deleted
+            ? "Coach dan akun login berhasil dihapus"
+            : "Coach berhasil dihapus"
+        );
+      }catch(err){
+        alert("Gagal menghapus coach: " + (err?.message || "Terjadi kesalahan."));
+      }
     }
 
     // ---------------- MODAL ----------------
