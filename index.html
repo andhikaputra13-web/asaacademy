@@ -565,7 +565,7 @@
         <div class="member-section-title"><h2>Booking Session</h2></div>
         <div class="booking-court-note">Semua harga sudah termasuk court.</div>
         <div class="member-session-list">
-          <button class="member-session" onclick="openMemberBooking('Single Session')"><div class="member-session-icon">🎾</div><div class="member-session-info"><strong>Single Session</strong><span>1 coaching session · Rp 500.000 · Termasuk court</span></div><div class="member-chevron">›</div></button>
+          <button class="member-session" onclick="openMemberBooking('Single Session')"><div class="member-session-icon">🎾</div><div class="member-session-info"><strong>Single Session</strong><span>1–4 pax · Mulai Rp 500.000 · Termasuk court</span></div><div class="member-chevron">›</div></button>
           <button class="member-session" onclick="openMemberBooking('Package 4 Session')"><div class="member-session-icon">4×</div><div class="member-session-info"><strong>Package 4 Session</strong><span>4 coaching sessions · Rp 2.000.000 · Termasuk court</span></div><div class="member-chevron">›</div></button>
           <button class="member-session" onclick="openMemberBooking('Package 8 Session')"><div class="member-session-icon">8×</div><div class="member-session-info"><strong>Package 8 Session</strong><span>8 coaching sessions · Rp 3.850.000 · Termasuk court</span></div><div class="member-chevron">›</div></button>
           <button class="member-session" onclick="openMemberBooking('Hitting Partner')"><div class="member-session-icon">🎾</div><div class="member-session-info"><strong>Hitting Partner</strong><span>1 session · Rp 350.000 · Termasuk court</span></div><div class="member-chevron">›</div></button>
@@ -1112,17 +1112,48 @@
       "Hitting Partner": 350000
     };
 
-    function sessionPrice(type){
-      return SESSION_PRICES[type] || 0;
+    function normalizePax(type,pax=1){
+      const n = Math.max(1, Math.min(4, Number(pax || 1)));
+      return type === "Single Session" ? n : 1;
+    }
+
+    function sessionPrice(type,pax=1){
+      const base = SESSION_PRICES[type] || 0;
+      if(type === "Single Session"){
+        return base + ((normalizePax(type,pax) - 1) * 100000);
+      }
+      return base;
     }
 
     function formatRupiah(value){
       return "Rp " + Number(value || 0).toLocaleString("id-ID");
     }
 
+    function updateMemberBookingPrice(select){
+      const el = document.getElementById("memberBookingPrice");
+      if(el) el.value = formatRupiah(sessionPrice("Single Session", select.value));
+    }
+
     function updateAdminBookingPrice(select){
-      const el = document.getElementById("adminBookingPrice");
-      if(el) el.value = formatRupiah(sessionPrice(select.value));
+      const type = select.value;
+      const paxField = document.getElementById("adminPaxField");
+      const paxSelect = document.getElementById("adminBookingPax");
+      const priceEl = document.getElementById("adminBookingPrice");
+
+      if(paxField) paxField.style.display = type === "Single Session" ? "" : "none";
+
+      if(paxSelect && type !== "Single Session"){
+        paxSelect.value = "1";
+      }
+
+      const pax = paxSelect?.value || 1;
+      if(priceEl) priceEl.value = formatRupiah(sessionPrice(type,pax));
+    }
+
+    function updateAdminPaxPrice(select){
+      const type = select.form?.querySelector('[name="type"]')?.value || "Single Session";
+      const priceEl = document.getElementById("adminBookingPrice");
+      if(priceEl) priceEl.value = formatRupiah(sessionPrice(type,select.value));
     }
 
     function openMemberBooking(type){
@@ -1143,9 +1174,22 @@
             <input value="${attr(type)}" disabled>
           </div>
 
+          ${type === "Single Session" ? `
+            <div class="field">
+              <label>JUMLAH PAX</label>
+              <select id="memberPaxSelect" name="pax" required onchange="updateMemberBookingPrice(this)">
+                <option value="1">1 Pax</option>
+                <option value="2">2 Pax</option>
+                <option value="3">3 Pax</option>
+                <option value="4">4 Pax</option>
+              </select>
+              <div class="time-select-note">Setiap tambahan 1 pax dikenakan Rp 100.000.</div>
+            </div>
+          ` : `<input type="hidden" name="pax" value="1">`}
+
           <div class="field">
             <label>HARGA · SUDAH TERMASUK COURT</label>
-            <input value="${attr(formatRupiah(sessionPrice(type)))}" disabled>
+            <input id="memberBookingPrice" value="${attr(formatRupiah(sessionPrice(type,1)))}" disabled>
           </div>
 
           <div class="field">
@@ -1242,9 +1286,12 @@
       btn.disabled = true;
       btn.textContent = "Memproses...";
 
+      const pax = normalizePax(f.type,f.pax);
+
       const { error } = await sb.from("bookings").insert({
         member_id: currentMember.id,
         type: f.type,
+        pax,
         booking_date: f.date,
         booking_time: slot.slot_time,
         coach_id: coach.id,
@@ -1274,7 +1321,8 @@
         `Email: ${email}`,
         `No. HP: ${phone}`,
         `Session: ${f.type}`,
-        `Harga: ${formatRupiah(sessionPrice(f.type))} (sudah termasuk court)`,
+        f.type === "Single Session" ? `Jumlah Pax: ${pax} pax` : "",
+        `Harga: ${formatRupiah(sessionPrice(f.type,pax))} (sudah termasuk court)`,
         `Coach: ${coach.name}`,
         f.type === "Hitting Partner" ? "Hitting Partner: Ya" : "",
         `Tanggal: ${formatDate(f.date)}`,
@@ -1352,7 +1400,7 @@
             <div class="slot-time">${String(b.booking_time).slice(0,5)}</div>
             <div class="slot-info">
               <strong>${escapeHtml(m?.name || "Member")}</strong>
-              <span>${formatDate(b.booking_date)} · ${escapeHtml(b.type)}</span><span>${formatRupiah(sessionPrice(b.type))} · Termasuk court</span>
+              <span>${formatDate(b.booking_date)} · ${escapeHtml(b.type)}${b.type==="Single Session" ? ` · ${Number(b.pax || 1)} pax` : ""}</span><span>${formatRupiah(sessionPrice(b.type,b.pax || 1))} · Termasuk court</span>
             </div>
             <span class="status-dot">${escapeHtml(b.status)}</span>
           </div>
@@ -1579,7 +1627,8 @@
               <span>📅 ${formatDate(b.booking_date)}</span>
               <span>🕒 ${escapeHtml(String(b.booking_time || "").slice(0,5))}</span>
               <span>🎾 ${escapeHtml(b.coach_id ? coachName(b.coach_id) : (b.coach || "Coach ASA"))}</span>
-              <span>💳 ${formatRupiah(sessionPrice(b.type))} · Termasuk court</span>
+              ${b.type==="Single Session" ? `<span>👥 ${Number(b.pax || 1)} pax</span>` : ""}
+              <span>💳 ${formatRupiah(sessionPrice(b.type,b.pax || 1))} · Termasuk court</span>
             </div>
             <div class="member-actions">
               <button class="mini-btn" onclick="openBooking('','', '${b.id}')">Edit</button>
@@ -2374,6 +2423,7 @@
       const selectedStatus = b?.status || "Booked";
       const selectedDate = b?.booking_date || "";
       const selectedTime = String(b?.booking_time || "").slice(0,5);
+      const selectedPax = normalizePax(selectedType,b?.pax || 1);
       const selectedNote = b?.note || "";
 
       showModal(b ? "Edit Booking" : "Tambah Booking", `
@@ -2390,9 +2440,17 @@
             </select>
           </div>
 
+          <div class="field" id="adminPaxField" style="${selectedType==="Single Session" ? "" : "display:none"}">
+            <label>JUMLAH PAX</label>
+            <select id="adminBookingPax" name="pax" onchange="updateAdminPaxPrice(this)">
+              ${[1,2,3,4].map(n=>`<option value="${n}" ${selectedPax===n?"selected":""}>${n} Pax</option>`).join("")}
+            </select>
+            <div class="time-select-note">Setiap tambahan 1 pax dikenakan Rp 100.000.</div>
+          </div>
+
           <div class="field">
             <label>HARGA · SUDAH TERMASUK COURT</label>
-            <input id="adminBookingPrice" value="${attr(formatRupiah(sessionPrice(selectedType)))}" disabled>
+            <input id="adminBookingPrice" value="${attr(formatRupiah(sessionPrice(selectedType,selectedPax)))}" disabled>
           </div>
 
           <div class="two-col">
@@ -2442,6 +2500,7 @@
       const payload = {
         member_id: f.member_id,
         type: f.type,
+        pax: normalizePax(f.type,f.pax),
         booking_date: f.booking_date,
         booking_time: f.booking_time,
         coach_id: f.coach_id || null,
