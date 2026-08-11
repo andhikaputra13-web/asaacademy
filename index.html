@@ -389,6 +389,116 @@
 
 
 
+
+    .admin-switch{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:5px;
+      padding:5px;
+      background:var(--surface-soft);
+      border:1px solid var(--line);
+      border-radius:17px;
+      margin:4px 0 16px;
+    }
+    .admin-switch-btn{
+      border:0;
+      background:transparent;
+      color:var(--muted);
+      border-radius:13px;
+      padding:11px 10px;
+      font-size:11px;
+      font-weight:850;
+    }
+    .admin-switch-btn.active{
+      background:var(--surface);
+      color:var(--text);
+      box-shadow:0 5px 15px rgba(17,24,20,.06);
+    }
+    .admin-panel{display:none}
+    .admin-panel.active{display:block}
+
+    .finance-summary{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:8px;
+      margin-bottom:14px;
+    }
+    .finance-summary-card{
+      min-width:0;
+      border:1px solid var(--line);
+      background:var(--surface);
+      border-radius:17px;
+      padding:12px 10px;
+    }
+    .finance-summary-card span{
+      display:block;
+      font-size:9px;
+      color:var(--muted);
+      margin-bottom:5px;
+    }
+    .finance-summary-card strong{
+      display:block;
+      font-size:12px;
+      line-height:1.25;
+      letter-spacing:-.02em;
+      overflow-wrap:anywhere;
+    }
+    .finance-actions{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:9px;
+      margin-bottom:16px;
+    }
+    .finance-action-btn{
+      border:1px solid var(--line);
+      background:var(--surface);
+      color:var(--text);
+      border-radius:16px;
+      padding:13px 10px;
+      font-size:11px;
+      font-weight:850;
+    }
+    .finance-action-btn.income{background:#eef8df;color:#4d7417;border-color:#dceec1}
+    .finance-action-btn.expense{background:#fff0f0;color:#9f3838;border-color:#f4d5d5}
+    body.dark .finance-action-btn.income{background:#23301d;color:#c8ed96;border-color:#34472b}
+    body.dark .finance-action-btn.expense{background:#321f1f;color:#f2b2b2;border-color:#4b2b2b}
+
+    .finance-list{display:grid;gap:9px}
+    .finance-card{
+      border:1px solid var(--line);
+      background:var(--surface);
+      border-radius:18px;
+      padding:14px;
+    }
+    .finance-card-top{display:flex;align-items:flex-start;gap:10px}
+    .finance-type-icon{
+      width:38px;height:38px;border-radius:13px;
+      display:grid;place-items:center;
+      font-size:16px;font-weight:900;flex:0 0 auto;
+    }
+    .finance-type-icon.income{background:#eef8df;color:#557c1d}
+    .finance-type-icon.expense{background:#fff0f0;color:#a44040}
+    body.dark .finance-type-icon.income{background:#23301d;color:#c8ed96}
+    body.dark .finance-type-icon.expense{background:#321f1f;color:#f2b2b2}
+    .finance-title{font-size:12px;font-weight:900}
+    .finance-sub{font-size:10px;color:var(--muted);margin-top:3px}
+    .finance-amount{margin-left:auto;text-align:right;font-size:12px;font-weight:900;white-space:nowrap}
+    .finance-amount.income{color:#5d861d}
+    .finance-amount.expense{color:#aa4141}
+    .finance-note{
+      margin-top:10px;
+      font-size:10.5px;
+      line-height:1.45;
+      color:var(--muted);
+    }
+    @media(max-width:390px){
+      .finance-summary{grid-template-columns:1fr}
+      .finance-summary-card{display:flex;align-items:center;justify-content:space-between;gap:10px}
+      .finance-summary-card span{margin:0}
+      .finance-summary-card strong{text-align:right}
+    }
+
+
     .account-list{display:grid;gap:10px}
     .account-card{
       background:var(--surface);border:1px solid var(--line);
@@ -714,10 +824,54 @@
 
       <section id="accountPage" class="page">
         <div class="section-head">
-          <div><h2>Akun</h2></div>
-          <button class="text-btn" onclick="openAccount()">+ Akun</button>
+          <div>
+            <h2>Admin</h2>
+            <p>Kelola akun dan keuangan ASA Academy</p>
+          </div>
         </div>
-        <div id="accountList" class="account-list"></div>
+
+        <div class="admin-switch">
+          <button type="button" class="admin-switch-btn active" data-admin-panel="adminAccountsPanel" onclick="switchAdminPanel('adminAccountsPanel',this)">Akun</button>
+          <button type="button" class="admin-switch-btn" data-admin-panel="adminFinancePanel" onclick="switchAdminPanel('adminFinancePanel',this)">Keuangan</button>
+        </div>
+
+        <div id="adminAccountsPanel" class="admin-panel active">
+          <div class="section-head" style="margin-top:0">
+            <div><h2>Akun</h2></div>
+            <button class="text-btn" onclick="openAccount()">+ Akun</button>
+          </div>
+          <div id="accountList" class="account-list"></div>
+        </div>
+
+        <div id="adminFinancePanel" class="admin-panel">
+          <div class="finance-summary">
+            <div class="finance-summary-card">
+              <span>Total Pemasukan</span>
+              <strong id="financeIncomeTotal">Rp 0</strong>
+            </div>
+            <div class="finance-summary-card">
+              <span>Total Pengeluaran</span>
+              <strong id="financeExpenseTotal">Rp 0</strong>
+            </div>
+            <div class="finance-summary-card">
+              <span>Saldo</span>
+              <strong id="financeBalanceTotal">Rp 0</strong>
+            </div>
+          </div>
+
+          <div class="finance-actions">
+            <button type="button" class="finance-action-btn income" onclick="openFinanceTransaction('income')">+ Pemasukan</button>
+            <button type="button" class="finance-action-btn expense" onclick="openFinanceTransaction('expense')">+ Pengeluaran</button>
+          </div>
+
+          <div class="section-head">
+            <div>
+              <h2>Riwayat Transaksi</h2>
+              <p>Pemasukan dan pengeluaran tercatat di Supabase</p>
+            </div>
+          </div>
+          <div id="financeList" class="finance-list"></div>
+        </div>
       </section>
 
       <section id="coachPage" class="page">
@@ -750,7 +904,7 @@
       <button class="nav-btn" data-page="reviewPage"><span>★</span>Review</button>
       <button class="nav-btn" data-page="memberPage"><span>♟</span>Member</button>
       <button class="nav-btn" data-page="coachPage"><span>◇</span>Coach</button>
-      <button class="nav-btn" data-page="accountPage"><span>⌘</span>Akun</button>
+      <button class="nav-btn" data-page="accountPage"><span>⌘</span>Admin</button>
     </nav>
   </div>
 
@@ -790,7 +944,8 @@
       reviews: [],
       coaches: [],
       slots: [],
-      accounts: []
+      accounts: [],
+      financeTransactions: []
     };
 
     let memberCoaches = [];
@@ -906,7 +1061,8 @@
         reviews:[],
         coaches:[],
         slots:[],
-        accounts:[]
+        accounts:[],
+        financeTransactions:[]
       };
 
       document.getElementById("appShell")?.classList.add("hidden");
@@ -1536,16 +1692,17 @@
       horizonDate.setDate(horizonDate.getDate()+30);
       const horizon = horizonDate.toISOString().slice(0,10);
 
-      const [membersRes, bookingsRes, reviewsRes, coachesRes, slotsRes, accountsRes] = await Promise.all([
+      const [membersRes, bookingsRes, reviewsRes, coachesRes, slotsRes, accountsRes, financeRes] = await Promise.all([
         sb.from("members").select("*").order("created_at",{ascending:false}),
         sb.from("bookings").select("*").order("booking_date",{ascending:false}).order("booking_time",{ascending:false}),
         sb.from("reviews").select("*").order("review_date",{ascending:false}),
         sb.from("coaches").select("*").order("created_at"),
         sb.from("coach_slots").select("*").or("admin_closed.eq.true,coach_closed.eq.true").gte("slot_date",today).lte("slot_date",horizon).order("slot_date").order("slot_time"),
-        sb.from("profiles").select("id,email,full_name,role,created_at").order("created_at",{ascending:false})
+        sb.from("profiles").select("id,email,full_name,role,created_at").order("created_at",{ascending:false}),
+        sb.from("finance_transactions").select("*").order("transaction_date",{ascending:false}).order("created_at",{ascending:false})
       ]);
 
-      const errors = [membersRes.error, bookingsRes.error, reviewsRes.error, coachesRes.error, slotsRes.error, accountsRes.error].filter(Boolean);
+      const errors = [membersRes.error, bookingsRes.error, reviewsRes.error, coachesRes.error, slotsRes.error, accountsRes.error, financeRes.error].filter(Boolean);
       if(errors.length){
         console.error(errors);
         showDataError(errors[0].message);
@@ -1558,6 +1715,7 @@
       db.coaches = coachesRes.data || [];
       db.slots = slotsRes.data || [];
       db.accounts = accountsRes.data || [];
+      db.financeTransactions = financeRes.data || [];
 
       renderAll();
     }
@@ -1568,6 +1726,8 @@
       document.getElementById("memberList").innerHTML = `<div class="loading">Memuat member...</div>`;
       const accountList = document.getElementById("accountList");
       if(accountList) accountList.innerHTML = `<div class="loading">Memuat akun...</div>`;
+      const financeList = document.getElementById("financeList");
+      if(financeList) financeList.innerHTML = `<div class="loading">Memuat keuangan...</div>`;
     }
 
     function showDataError(message){
@@ -1577,6 +1737,8 @@
       document.getElementById("memberList").innerHTML = html;
       const accountList = document.getElementById("accountList");
       if(accountList) accountList.innerHTML = html;
+      const financeList = document.getElementById("financeList");
+      if(financeList) financeList.innerHTML = html;
     }
 
     function initials(name){
@@ -1719,6 +1881,7 @@
       renderCoachAdmin();
       renderCoachSlotsAdmin();
       renderAccounts();
+      renderFinance();
     }
 
     // ---------------- NAV ----------------
@@ -1742,6 +1905,210 @@
     });
 
     document.getElementById("memberSearch").addEventListener("input",renderMembers);
+
+
+    // ---------------- ADMIN PAGE ----------------
+    function switchAdminPanel(panelId,button){
+      document.querySelectorAll("#accountPage .admin-panel").forEach(panel=>{
+        panel.classList.toggle("active", panel.id === panelId);
+      });
+
+      document.querySelectorAll("#accountPage .admin-switch-btn").forEach(btn=>{
+        btn.classList.toggle("active", btn === button);
+      });
+
+      if(panelId === "adminFinancePanel"){
+        renderFinance();
+      }
+    }
+
+    // ---------------- ADMIN: FINANCE ----------------
+    let editingFinanceId = null;
+
+    function formatMoney(value){
+      return "Rp " + Math.round(Number(value || 0)).toLocaleString("id-ID");
+    }
+
+    function renderFinance(){
+      const list = document.getElementById("financeList");
+      if(!list) return;
+
+      const rows = db.financeTransactions || [];
+      const income = rows
+        .filter(x=>x.transaction_type === "income")
+        .reduce((sum,x)=>sum + Number(x.amount || 0),0);
+      const expense = rows
+        .filter(x=>x.transaction_type === "expense")
+        .reduce((sum,x)=>sum + Number(x.amount || 0),0);
+      const balance = income - expense;
+
+      const incomeEl = document.getElementById("financeIncomeTotal");
+      const expenseEl = document.getElementById("financeExpenseTotal");
+      const balanceEl = document.getElementById("financeBalanceTotal");
+
+      if(incomeEl) incomeEl.textContent = formatMoney(income);
+      if(expenseEl) expenseEl.textContent = formatMoney(expense);
+      if(balanceEl) balanceEl.textContent = formatMoney(balance);
+
+      if(!rows.length){
+        list.innerHTML = `<div class="empty"><div class="emoji">↕</div>Belum ada pemasukan atau pengeluaran.</div>`;
+        return;
+      }
+
+      list.innerHTML = rows.map(t=>{
+        const isIncome = t.transaction_type === "income";
+        const typeLabel = isIncome ? "Pemasukan" : "Pengeluaran";
+        const amountPrefix = isIncome ? "+" : "−";
+
+        return `
+          <article class="finance-card">
+            <div class="finance-card-top">
+              <div class="finance-type-icon ${isIncome ? "income" : "expense"}">${isIncome ? "↓" : "↑"}</div>
+              <div class="grow">
+                <div class="finance-title">${escapeHtml(t.category || typeLabel)}</div>
+                <div class="finance-sub">${typeLabel} · ${formatDate(t.transaction_date)}</div>
+              </div>
+              <div class="finance-amount ${isIncome ? "income" : "expense"}">${amountPrefix}${formatMoney(t.amount)}</div>
+            </div>
+            ${t.note ? `<div class="finance-note">${escapeHtml(t.note)}</div>` : ""}
+            <div class="member-actions">
+              <button class="mini-btn" onclick="openFinanceTransaction('${t.transaction_type}','${t.id}')">Edit</button>
+              <button class="mini-btn danger" onclick="deleteFinanceTransaction('${t.id}')">Hapus</button>
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function openFinanceTransaction(type="income",id=""){
+      const transaction = id
+        ? db.financeTransactions.find(x=>x.id===id)
+        : null;
+
+      editingFinanceId = transaction?.id || null;
+      const selectedType = transaction?.transaction_type || type || "income";
+      const today = new Date().toISOString().slice(0,10);
+
+      showModal(
+        transaction
+          ? (selectedType === "income" ? "Edit Pemasukan" : "Edit Pengeluaran")
+          : (selectedType === "income" ? "Tambah Pemasukan" : "Tambah Pengeluaran"),
+        `
+          <form class="form" onsubmit="saveFinanceTransaction(event)">
+            <div class="field">
+              <label>JENIS TRANSAKSI</label>
+              <select name="transaction_type" required>
+                <option value="income" ${selectedType==="income"?"selected":""}>Pemasukan</option>
+                <option value="expense" ${selectedType==="expense"?"selected":""}>Pengeluaran</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label>TANGGAL</label>
+              <input name="transaction_date" type="date" value="${attr(transaction?.transaction_date || today)}" required>
+            </div>
+
+            <div class="field">
+              <label>NOMINAL</label>
+              <input name="amount" type="number" inputmode="numeric" min="1" step="1000" value="${attr(transaction?.amount || "")}" required>
+            </div>
+
+            <div class="field">
+              <label>KATEGORI</label>
+              <input name="category" value="${attr(transaction?.category || "")}" required>
+            </div>
+
+            <div class="field">
+              <label>CATATAN</label>
+              <textarea name="note" rows="3">${escapeHtml(transaction?.note || "")}</textarea>
+            </div>
+
+            <button id="saveFinanceBtn" class="primary-btn lime" type="submit">
+              ${transaction ? "Simpan Perubahan" : "Simpan Transaksi"}
+            </button>
+          </form>
+        `
+      );
+    }
+
+    async function saveFinanceTransaction(e){
+      e.preventDefault();
+
+      const form = e.target;
+      const f = Object.fromEntries(new FormData(form).entries());
+      const btn = document.getElementById("saveFinanceBtn");
+      const amount = Math.round(Number(f.amount || 0));
+
+      if(!["income","expense"].includes(f.transaction_type)){
+        return alert("Jenis transaksi tidak valid.");
+      }
+
+      if(!Number.isFinite(amount) || amount <= 0){
+        return alert("Nominal harus lebih dari Rp 0.");
+      }
+
+      if(!String(f.category || "").trim()){
+        return alert("Kategori wajib diisi.");
+      }
+
+      const payload = {
+        transaction_type: f.transaction_type,
+        transaction_date: f.transaction_date,
+        amount,
+        category: String(f.category).trim(),
+        note: String(f.note || "").trim() || null,
+        updated_at: new Date().toISOString()
+      };
+
+      btn.disabled = true;
+      btn.textContent = "Menyimpan...";
+
+      const result = editingFinanceId
+        ? await sb.from("finance_transactions").update(payload).eq("id",editingFinanceId)
+        : await sb.from("finance_transactions").insert({
+            ...payload,
+            created_by: currentUser?.id || null
+          });
+
+      if(result.error){
+        btn.disabled = false;
+        btn.textContent = editingFinanceId ? "Simpan Perubahan" : "Simpan Transaksi";
+        return alert("Gagal menyimpan transaksi: " + result.error.message);
+      }
+
+      const wasEditing = !!editingFinanceId;
+      const transactionType = f.transaction_type;
+
+      editingFinanceId = null;
+      closeModal();
+      await loadAllData();
+
+      showToast(
+        wasEditing
+          ? "Transaksi berhasil diperbarui"
+          : (transactionType === "income" ? "Pemasukan berhasil ditambahkan" : "Pengeluaran berhasil ditambahkan")
+      );
+    }
+
+    async function deleteFinanceTransaction(id){
+      const transaction = db.financeTransactions.find(x=>x.id===id);
+      if(!transaction) return;
+
+      const label = transaction.transaction_type === "income" ? "pemasukan" : "pengeluaran";
+      if(!confirm(`Hapus ${label} ${formatMoney(transaction.amount)}?`)) return;
+
+      const { error } = await sb
+        .from("finance_transactions")
+        .delete()
+        .eq("id",id);
+
+      if(error){
+        return alert("Gagal menghapus transaksi: " + error.message);
+      }
+
+      await loadAllData();
+      showToast("Transaksi berhasil dihapus");
+    }
 
 
     // ---------------- ADMIN: ACCOUNTS ----------------
