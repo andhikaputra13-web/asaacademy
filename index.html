@@ -463,6 +463,62 @@
     body.dark .finance-action-btn.income{background:#23301d;color:#c8ed96;border-color:#34472b}
     body.dark .finance-action-btn.expense{background:#321f1f;color:#f2b2b2;border-color:#4b2b2b}
 
+
+    .finance-filter{
+      border:1px solid var(--line);
+      background:var(--surface);
+      border-radius:18px;
+      padding:10px;
+      margin-bottom:14px;
+    }
+    .finance-filter-tabs{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:5px;
+      padding:4px;
+      background:var(--surface-soft);
+      border-radius:14px;
+    }
+    .finance-filter-btn{
+      min-width:0;
+      border:0;
+      background:transparent;
+      color:var(--muted);
+      border-radius:11px;
+      padding:9px 5px;
+      font-size:10px;
+      font-weight:850;
+    }
+    .finance-filter-btn.active{
+      background:var(--surface);
+      color:var(--text);
+      box-shadow:0 4px 12px rgba(17,24,20,.06);
+    }
+    .finance-filter-control{
+      margin-top:9px;
+    }
+    .finance-filter-control:empty{display:none}
+    .finance-filter-control input,
+    .finance-filter-control select{
+      width:100%;
+      min-height:42px;
+      border:1px solid var(--line);
+      background:var(--surface);
+      color:var(--text);
+      border-radius:13px;
+      padding:0 12px;
+      font-size:11px;
+      font-weight:750;
+      outline:none;
+    }
+    .finance-period-label{
+      margin-top:8px;
+      padding:0 2px;
+      font-size:9.5px;
+      color:var(--muted);
+    }
+
+
     .finance-list{display:grid;gap:9px}
     .finance-card{
       border:1px solid var(--line);
@@ -867,9 +923,21 @@
           <div class="section-head">
             <div>
               <h2>Riwayat Transaksi</h2>
-              <p>Pemasukan dan pengeluaran tercatat di Supabase</p>
+              <p>Cari transaksi berdasarkan periode</p>
             </div>
           </div>
+
+          <div class="finance-filter">
+            <div class="finance-filter-tabs">
+              <button type="button" class="finance-filter-btn active" data-finance-filter="all" onclick="setFinanceFilter('all',this)">Semua</button>
+              <button type="button" class="finance-filter-btn" data-finance-filter="date" onclick="setFinanceFilter('date',this)">Tanggal</button>
+              <button type="button" class="finance-filter-btn" data-finance-filter="month" onclick="setFinanceFilter('month',this)">Bulan</button>
+              <button type="button" class="finance-filter-btn" data-finance-filter="year" onclick="setFinanceFilter('year',this)">Tahun</button>
+            </div>
+            <div id="financeFilterControl" class="finance-filter-control"></div>
+            <div id="financePeriodLabel" class="finance-period-label">Menampilkan semua transaksi</div>
+          </div>
+
           <div id="financeList" class="finance-list"></div>
         </div>
       </section>
@@ -1924,6 +1992,123 @@
 
     // ---------------- ADMIN: FINANCE ----------------
     let editingFinanceId = null;
+    let financeFilterMode = "all";
+    let financeFilterValue = "";
+
+    function setFinanceFilter(mode,button){
+      financeFilterMode = mode;
+
+      document.querySelectorAll(".finance-filter-btn").forEach(btn=>{
+        btn.classList.toggle("active", btn === button);
+      });
+
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth()+1).padStart(2,"0");
+      const dd = String(now.getDate()).padStart(2,"0");
+
+      if(mode === "date") financeFilterValue = `${yyyy}-${mm}-${dd}`;
+      else if(mode === "month") financeFilterValue = `${yyyy}-${mm}`;
+      else if(mode === "year") financeFilterValue = String(yyyy);
+      else financeFilterValue = "";
+
+      renderFinanceFilterControl();
+      renderFinance();
+    }
+
+    function renderFinanceFilterControl(){
+      const wrap = document.getElementById("financeFilterControl");
+      if(!wrap) return;
+
+      if(financeFilterMode === "all"){
+        wrap.innerHTML = "";
+        return;
+      }
+
+      if(financeFilterMode === "date"){
+        wrap.innerHTML = `<input type="date" value="${attr(financeFilterValue)}" onchange="changeFinanceFilterValue(this.value)">`;
+        return;
+      }
+
+      if(financeFilterMode === "month"){
+        wrap.innerHTML = `<input type="month" value="${attr(financeFilterValue)}" onchange="changeFinanceFilterValue(this.value)">`;
+        return;
+      }
+
+      if(financeFilterMode === "year"){
+        const currentYear = new Date().getFullYear();
+        const years = [...new Set([
+          currentYear,
+          ...(db.financeTransactions || [])
+            .map(x=>Number(String(x.transaction_date || "").slice(0,4)))
+            .filter(Boolean)
+        ])].sort((a,b)=>b-a);
+
+        if(!years.includes(Number(financeFilterValue))){
+          financeFilterValue = String(currentYear);
+        }
+
+        wrap.innerHTML = `
+          <select onchange="changeFinanceFilterValue(this.value)">
+            ${years.map(year=>`<option value="${year}" ${String(year)===String(financeFilterValue)?"selected":""}>${year}</option>`).join("")}
+          </select>
+        `;
+      }
+    }
+
+    function changeFinanceFilterValue(value){
+      financeFilterValue = value || "";
+      renderFinance();
+    }
+
+    function financeFilteredRows(){
+      const rows = db.financeTransactions || [];
+      if(financeFilterMode === "all" || !financeFilterValue) return rows;
+
+      return rows.filter(t=>{
+        const date = String(t.transaction_date || "");
+
+        if(financeFilterMode === "date"){
+          return date === financeFilterValue;
+        }
+
+        if(financeFilterMode === "month"){
+          return date.slice(0,7) === financeFilterValue;
+        }
+
+        if(financeFilterMode === "year"){
+          return date.slice(0,4) === String(financeFilterValue);
+        }
+
+        return true;
+      });
+    }
+
+    function financeFilterLabel(){
+      if(financeFilterMode === "all" || !financeFilterValue){
+        return "Menampilkan semua transaksi";
+      }
+
+      if(financeFilterMode === "date"){
+        return `Periode: ${formatDate(financeFilterValue)}`;
+      }
+
+      if(financeFilterMode === "month"){
+        const [year,month] = financeFilterValue.split("-").map(Number);
+        const label = new Intl.DateTimeFormat("id-ID",{
+          month:"long",
+          year:"numeric"
+        }).format(new Date(year,month-1,1));
+
+        return `Periode: ${label}`;
+      }
+
+      if(financeFilterMode === "year"){
+        return `Periode: Tahun ${financeFilterValue}`;
+      }
+
+      return "Menampilkan semua transaksi";
+    }
 
     function formatMoney(value){
       return "Rp " + Math.round(Number(value || 0)).toLocaleString("id-ID");
@@ -1933,7 +2118,12 @@
       const list = document.getElementById("financeList");
       if(!list) return;
 
-      const rows = db.financeTransactions || [];
+      renderFinanceFilterControl();
+
+      const rows = financeFilteredRows();
+      const periodLabel = document.getElementById("financePeriodLabel");
+      if(periodLabel) periodLabel.textContent = financeFilterLabel();
+
       const income = rows
         .filter(x=>x.transaction_type === "income")
         .reduce((sum,x)=>sum + Number(x.amount || 0),0);
@@ -1951,7 +2141,11 @@
       if(balanceEl) balanceEl.textContent = formatMoney(balance);
 
       if(!rows.length){
-        list.innerHTML = `<div class="empty"><div class="emoji">↕</div>Belum ada pemasukan atau pengeluaran.</div>`;
+        const message = financeFilterMode === "all"
+          ? "Belum ada pemasukan atau pengeluaran."
+          : "Tidak ada transaksi pada periode yang dipilih.";
+
+        list.innerHTML = `<div class="empty"><div class="emoji">↕</div>${message}</div>`;
         return;
       }
 
