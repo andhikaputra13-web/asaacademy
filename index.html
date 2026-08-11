@@ -555,10 +555,10 @@
       <section id="memberBookingPage" class="member-page active">
         <div class="member-section-title"><h2>Booking Session</h2></div>
         <div class="member-session-list">
-          <button class="member-session" onclick="openMemberBooking('Single Session')"><div class="member-session-icon">🎾</div><div class="member-session-info"><strong>Single Session</strong><span>1 coaching session</span></div><div class="member-chevron">›</div></button>
-          <button class="member-session" onclick="openMemberBooking('Package 4 Session')"><div class="member-session-icon">4×</div><div class="member-session-info"><strong>Package 4 Session</strong><span>4 coaching sessions</span></div><div class="member-chevron">›</div></button>
-          <button class="member-session" onclick="openMemberBooking('Package 8 Session')"><div class="member-session-icon">8×</div><div class="member-session-info"><strong>Package 8 Session</strong><span>8 coaching sessions</span></div><div class="member-chevron">›</div></button>
-          <button class="member-session" onclick="openMemberBooking('Hitting Partner')"><div class="member-session-icon">🎾</div><div class="member-session-info"><strong>Hitting Partner</strong><span>Pilih coach, tanggal & jam</span></div><div class="member-chevron">›</div></button>
+          <button class="member-session" onclick="openMemberBooking('Single Session')"><div class="member-session-icon">🎾</div><div class="member-session-info"><strong>Single Session</strong><span>1 coaching session · Rp 500.000</span></div><div class="member-chevron">›</div></button>
+          <button class="member-session" onclick="openMemberBooking('Package 4 Session')"><div class="member-session-icon">4×</div><div class="member-session-info"><strong>Package 4 Session</strong><span>4 coaching sessions · Rp 2.000.000</span></div><div class="member-chevron">›</div></button>
+          <button class="member-session" onclick="openMemberBooking('Package 8 Session')"><div class="member-session-icon">8×</div><div class="member-session-info"><strong>Package 8 Session</strong><span>8 coaching sessions · Rp 3.850.000</span></div><div class="member-chevron">›</div></button>
+          <button class="member-session" onclick="openMemberBooking('Hitting Partner')"><div class="member-session-icon">🎾</div><div class="member-session-info"><strong>Hitting Partner</strong><span>1 session · Rp 350.000</span></div><div class="member-chevron">›</div></button>
         </div>
       </section>
       <section id="memberReviewPage" class="member-page"><div class="member-section-title"><h2>Review Saya</h2></div><div id="memberReviewList" class="member-review-list"></div></section>
@@ -654,25 +654,25 @@
           <button class="session-card" onclick="openBooking('Single Session')">
             <div class="session-icon">🎾</div>
             <div class="grow"><h3>Single Session</h3></div>
-            <div class="price"><strong>1 Session</strong></div>
+            <div class="price"><strong>Rp 500.000</strong><span>1 Session</span></div>
           </button>
 
           <button class="session-card" onclick="openBooking('Package 4 Session')">
             <div class="session-icon">⚡</div>
             <div class="grow"><h3>Package 4 Session</h3></div>
-            <div class="price"><strong>4 Sessions</strong></div>
+            <div class="price"><strong>Rp 2.000.000</strong><span>4 Sessions</span></div>
           </button>
 
           <button class="session-card" onclick="openBooking('Package 8 Session')">
             <div class="session-icon">🏆</div>
             <div class="grow"><h3>Package 8 Session</h3></div>
-            <div class="price"><strong>8 Sessions</strong></div>
+            <div class="price"><strong>Rp 3.850.000</strong><span>8 Sessions</span></div>
           </button>
 
           <button class="session-card" onclick="openBooking('Hitting Partner')">
             <div class="session-icon">🎾</div>
             <div class="grow"><h3>Hitting Partner</h3></div>
-            <div class="price"><strong>1 Session</strong></div>
+            <div class="price"><strong>Rp 350.000</strong><span>1 Session</span></div>
           </button>
         </div>
 
@@ -1095,6 +1095,26 @@
       });
     });
 
+    const SESSION_PRICES = {
+      "Single Session": 500000,
+      "Package 4 Session": 2000000,
+      "Package 8 Session": 3850000,
+      "Hitting Partner": 350000
+    };
+
+    function sessionPrice(type){
+      return SESSION_PRICES[type] || 0;
+    }
+
+    function formatRupiah(value){
+      return "Rp " + Number(value || 0).toLocaleString("id-ID");
+    }
+
+    function updateAdminBookingPrice(select){
+      const el = document.getElementById("adminBookingPrice");
+      if(el) el.value = formatRupiah(sessionPrice(select.value));
+    }
+
     function openMemberBooking(type){
       if(!memberCoaches.length){
         showModal("Booking Session", `<div class="member-empty">Coach belum tersedia.</div>`);
@@ -1111,6 +1131,11 @@
           <div class="field">
             <label>SESSION</label>
             <input value="${attr(type)}" disabled>
+          </div>
+
+          <div class="field">
+            <label>HARGA</label>
+            <input value="${attr(formatRupiah(sessionPrice(type)))}" disabled>
           </div>
 
           <div class="field">
@@ -1239,6 +1264,7 @@
         `Email: ${email}`,
         `No. HP: ${phone}`,
         `Session: ${f.type}`,
+        `Harga: ${formatRupiah(sessionPrice(f.type))}`,
         `Coach: ${coach.name}`,
         f.type === "Hitting Partner" ? "Hitting Partner: Ya" : "",
         `Tanggal: ${formatDate(f.date)}`,
@@ -2348,9 +2374,14 @@
 
           <div class="field">
             <label>PROGRAM</label>
-            <select name="type" required>
+            <select name="type" required onchange="updateAdminBookingPrice(this)">
               ${["Single Session","Package 4 Session","Package 8 Session","Hitting Partner"].map(x=>`<option ${selectedType===x?"selected":""}>${x}</option>`).join("")}
             </select>
+          </div>
+
+          <div class="field">
+            <label>HARGA</label>
+            <input id="adminBookingPrice" value="${attr(formatRupiah(sessionPrice(selectedType)))}" disabled>
           </div>
 
           <div class="two-col">
