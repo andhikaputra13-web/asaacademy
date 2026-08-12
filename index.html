@@ -966,11 +966,12 @@
             <div class="finance-auto-icon">↘</div>
             <div>
               <strong>Pemasukan otomatis dari booking</strong>
-              <span>Setiap booking Member masuk ke pemasukan Coach yang dipilih. Booking Cancelled tidak dihitung.</span>
+              <span>Booking Member otomatis masuk ke pemasukan Coach yang dipilih. Pemasukan manual tetap bisa ditambahkan Admin dan masuk ke pemasukan keseluruhan. Booking Cancelled tidak dihitung.</span>
             </div>
           </div>
 
-          <div class="finance-actions single">
+          <div class="finance-actions">
+            <button type="button" class="finance-action-btn income" onclick="openFinanceTransaction('income')">+ Pemasukan Manual</button>
             <button type="button" class="finance-action-btn expense" onclick="openFinanceTransaction('expense')">+ Pengeluaran</button>
           </div>
 
@@ -2191,15 +2192,25 @@
         financeDateMatches(b.booking_date)
       );
 
+      const manualIncomeRows = (db.financeTransactions || []).filter(t=>
+        t.transaction_type === "income" &&
+        financeDateMatches(t.transaction_date)
+      );
+
       const expenseRows = (db.financeTransactions || []).filter(t=>
         t.transaction_type === "expense" &&
         financeDateMatches(t.transaction_date)
       );
 
-      const income = incomeBookings.reduce(
+      const automaticIncome = incomeBookings.reduce(
         (sum,b)=>sum + Number(b.amount || sessionPrice(b.type,b.pax || 1)),
         0
       );
+      const manualIncome = manualIncomeRows.reduce(
+        (sum,t)=>sum + Number(t.amount || 0),
+        0
+      );
+      const income = automaticIncome + manualIncome;
       const expense = expenseRows.reduce(
         (sum,t)=>sum + Number(t.amount || 0),
         0
@@ -2282,6 +2293,16 @@
           status:b.status,
           id:b.id
         })),
+        ...manualIncomeRows.map(t=>({
+          source:"manual_income",
+          date:t.transaction_date,
+          created_at:t.created_at,
+          amount:Number(t.amount || 0),
+          type:"manual_income",
+          category:t.category,
+          note:t.note,
+          id:t.id
+        })),
         ...expenseRows.map(t=>({
           source:"expense",
           date:t.transaction_date,
@@ -2300,7 +2321,7 @@
 
       if(!ledgerRows.length){
         const message = financeFilterMode === "all"
-          ? "Belum ada pemasukan booking atau pengeluaran."
+          ? "Belum ada pemasukan booking, pemasukan manual, atau pengeluaran."
           : "Tidak ada transaksi pada periode yang dipilih.";
 
         list.innerHTML = `<div class="empty"><div class="emoji">↕</div>${message}</div>`;
@@ -2308,9 +2329,7 @@
       }
 
       list.innerHTML = ledgerRows.map(t=>{
-        const isIncome = t.type === "income";
-
-        if(isIncome){
+        if(t.type === "income"){
           const coachLabel = t.coach_id ? coachName(t.coach_id) : (t.coach || "Coach dihapus");
           const paxText = t.category === "Single Session" ? ` · ${Number(t.pax || 1)} pax` : "";
 
@@ -2325,6 +2344,27 @@
                 <div class="finance-amount income">+${formatMoney(t.amount)}</div>
               </div>
               <div class="finance-source-pill">Otomatis dari booking · ${escapeHtml(t.status || "Booked")}</div>
+            </article>
+          `;
+        }
+
+        if(t.type === "manual_income"){
+          return `
+            <article class="finance-card">
+              <div class="finance-card-top">
+                <div class="finance-type-icon income">↓</div>
+                <div class="grow">
+                  <div class="finance-title">${escapeHtml(t.category || "Pemasukan Manual")}</div>
+                  <div class="finance-sub">Pemasukan Manual · ${formatDate(t.date)}</div>
+                </div>
+                <div class="finance-amount income">+${formatMoney(t.amount)}</div>
+              </div>
+              ${t.note ? `<div class="finance-note">${escapeHtml(t.note)}</div>` : ""}
+              <div class="finance-source-pill">Ditambahkan manual oleh Admin</div>
+              <div class="member-actions">
+                <button class="mini-btn" onclick="openFinanceTransaction('income','${t.id}')">Edit</button>
+                <button class="mini-btn danger" onclick="deleteFinanceTransaction('${t.id}')">Hapus</button>
+              </div>
             </article>
           `;
         }
@@ -2355,14 +2395,16 @@
         : null;
 
       editingFinanceId = transaction?.id || null;
-      const selectedType = "expense";
+      const selectedType = transaction?.transaction_type || (type === "income" ? "income" : "expense");
       const today = new Date().toISOString().slice(0,10);
 
       showModal(
-        transaction ? "Edit Pengeluaran" : "Tambah Pengeluaran",
+        transaction
+          ? (selectedType === "income" ? "Edit Pemasukan Manual" : "Edit Pengeluaran")
+          : (selectedType === "income" ? "Tambah Pemasukan Manual" : "Tambah Pengeluaran"),
         `
           <form class="form" onsubmit="saveFinanceTransaction(event)">
-            <input type="hidden" name="transaction_type" value="expense">
+            <input type="hidden" name="transaction_type" value="${selectedType}">
 
             <div class="field">
               <label>TANGGAL</label>
@@ -2400,8 +2442,8 @@
       const btn = document.getElementById("saveFinanceBtn");
       const amount = Math.round(Number(f.amount || 0));
 
-      if(f.transaction_type !== "expense"){
-        return alert("Pemasukan dibuat otomatis dari booking Member.");
+      if(!["income","expense"].includes(f.transaction_type)){
+        return alert("Jenis transaksi tidak valid.");
       }
 
       if(!Number.isFinite(amount) || amount <= 0){
@@ -2446,8 +2488,8 @@
 
       showToast(
         wasEditing
-          ? "Pengeluaran berhasil diperbarui"
-          : "Pengeluaran berhasil ditambahkan"
+          ? (transactionType === "income" ? "Pemasukan manual berhasil diperbarui" : "Pengeluaran berhasil diperbarui")
+          : (transactionType === "income" ? "Pemasukan manual berhasil ditambahkan" : "Pengeluaran berhasil ditambahkan")
       );
     }
 
@@ -2455,7 +2497,8 @@
       const transaction = db.financeTransactions.find(x=>x.id===id);
       if(!transaction) return;
 
-      if(!confirm(`Hapus pengeluaran ${formatMoney(transaction.amount)}?`)) return;
+      const label = transaction.transaction_type === "income" ? "pemasukan manual" : "pengeluaran";
+      if(!confirm(`Hapus ${label} ${formatMoney(transaction.amount)}?`)) return;
 
       const { error } = await sb
         .from("finance_transactions")
