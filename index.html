@@ -464,6 +464,53 @@
     body.dark .finance-action-btn.expense{background:#321f1f;color:#f2b2b2;border-color:#4b2b2b}
 
 
+
+    .finance-auto-note{
+      display:flex;align-items:flex-start;gap:10px;
+      border:1px solid #dceec1;background:#f3f9e8;
+      border-radius:17px;padding:12px;margin-bottom:10px;
+    }
+    body.dark .finance-auto-note{background:#202b1c;border-color:#34472b}
+    .finance-auto-icon{
+      width:34px;height:34px;border-radius:12px;
+      display:grid;place-items:center;background:#dff1bd;
+      color:#4f7517;font-weight:950;flex:0 0 auto;
+    }
+    body.dark .finance-auto-icon{background:#304222;color:#c8ed96}
+    .finance-auto-note strong{display:block;font-size:11px;font-weight:900;color:var(--text);margin-bottom:3px}
+    .finance-auto-note span{display:block;font-size:9.5px;line-height:1.45;color:var(--muted)}
+    .finance-actions.single{grid-template-columns:1fr}
+    .coach-income-list{
+      display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:8px;margin-bottom:17px;
+    }
+    .coach-income-card{
+      min-width:0;border:1px solid var(--line);background:var(--surface);
+      border-radius:17px;padding:12px;
+    }
+    .coach-income-head{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+    .coach-income-avatar{
+      width:32px;height:32px;border-radius:11px;display:grid;place-items:center;
+      background:var(--surface-soft);font-size:10px;font-weight:950;flex:0 0 auto;
+    }
+    .coach-income-name{
+      min-width:0;font-size:11px;font-weight:900;line-height:1.25;
+      overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    }
+    .coach-income-amount{
+      font-size:13px;font-weight:950;letter-spacing:-.025em;
+      color:#5d861d;margin-bottom:3px;
+    }
+    body.dark .coach-income-amount{color:#c8ed96}
+    .coach-income-count{font-size:9px;color:var(--muted)}
+    .finance-source-pill{
+      display:inline-flex;align-items:center;border:1px solid var(--line);
+      background:var(--surface-soft);color:var(--muted);border-radius:999px;
+      padding:4px 7px;font-size:8.5px;font-weight:800;margin-top:9px;
+    }
+    @media(max-width:360px){.coach-income-list{grid-template-columns:1fr}}
+
+
     .finance-filter{
       border:1px solid var(--line);
       background:var(--surface);
@@ -902,7 +949,7 @@
         <div id="adminFinancePanel" class="admin-panel">
           <div class="finance-summary">
             <div class="finance-summary-card">
-              <span>Total Pemasukan</span>
+              <span>Pemasukan Keseluruhan</span>
               <strong id="financeIncomeTotal">Rp 0</strong>
             </div>
             <div class="finance-summary-card">
@@ -915,10 +962,25 @@
             </div>
           </div>
 
-          <div class="finance-actions">
-            <button type="button" class="finance-action-btn income" onclick="openFinanceTransaction('income')">+ Pemasukan</button>
+          <div class="finance-auto-note">
+            <div class="finance-auto-icon">↘</div>
+            <div>
+              <strong>Pemasukan otomatis dari booking</strong>
+              <span>Setiap booking Member masuk ke pemasukan Coach yang dipilih. Booking Cancelled tidak dihitung.</span>
+            </div>
+          </div>
+
+          <div class="finance-actions single">
             <button type="button" class="finance-action-btn expense" onclick="openFinanceTransaction('expense')">+ Pengeluaran</button>
           </div>
+
+          <div class="section-head">
+            <div>
+              <h2>Pemasukan per Coach</h2>
+              <p id="coachIncomePeriodText">Semua periode</p>
+            </div>
+          </div>
+          <div id="coachIncomeList" class="coach-income-list"></div>
 
           <div class="section-head">
             <div>
@@ -1516,6 +1578,7 @@
         member_id: currentMember.id,
         type: f.type,
         pax,
+        amount: sessionPrice(f.type,pax),
         booking_date: f.date,
         booking_time: slot.slot_time,
         coach_id: coach.id,
@@ -1796,6 +1859,8 @@
       if(accountList) accountList.innerHTML = `<div class="loading">Memuat akun...</div>`;
       const financeList = document.getElementById("financeList");
       if(financeList) financeList.innerHTML = `<div class="loading">Memuat keuangan...</div>`;
+      const coachIncomeList = document.getElementById("coachIncomeList");
+      if(coachIncomeList) coachIncomeList.innerHTML = `<div class="loading">Memuat pemasukan coach...</div>`;
     }
 
     function showDataError(message){
@@ -1807,6 +1872,8 @@
       if(accountList) accountList.innerHTML = html;
       const financeList = document.getElementById("financeList");
       if(financeList) financeList.innerHTML = html;
+      const coachIncomeList = document.getElementById("coachIncomeList");
+      if(coachIncomeList) coachIncomeList.innerHTML = html;
     }
 
     function initials(name){
@@ -2041,6 +2108,9 @@
           currentYear,
           ...(db.financeTransactions || [])
             .map(x=>Number(String(x.transaction_date || "").slice(0,4)))
+            .filter(Boolean),
+          ...(db.bookings || [])
+            .map(x=>Number(String(x.booking_date || "").slice(0,4)))
             .filter(Boolean)
         ])].sort((a,b)=>b-a);
 
@@ -2061,27 +2131,15 @@
       renderFinance();
     }
 
-    function financeFilteredRows(){
-      const rows = db.financeTransactions || [];
-      if(financeFilterMode === "all" || !financeFilterValue) return rows;
+    function financeDateMatches(dateValue){
+      const date = String(dateValue || "");
+      if(financeFilterMode === "all" || !financeFilterValue) return true;
 
-      return rows.filter(t=>{
-        const date = String(t.transaction_date || "");
+      if(financeFilterMode === "date") return date === financeFilterValue;
+      if(financeFilterMode === "month") return date.slice(0,7) === financeFilterValue;
+      if(financeFilterMode === "year") return date.slice(0,4) === String(financeFilterValue);
 
-        if(financeFilterMode === "date"){
-          return date === financeFilterValue;
-        }
-
-        if(financeFilterMode === "month"){
-          return date.slice(0,7) === financeFilterValue;
-        }
-
-        if(financeFilterMode === "year"){
-          return date.slice(0,4) === String(financeFilterValue);
-        }
-
-        return true;
-      });
+      return true;
     }
 
     function financeFilterLabel(){
@@ -2116,20 +2174,36 @@
 
     function renderFinance(){
       const list = document.getElementById("financeList");
+      const coachIncomeList = document.getElementById("coachIncomeList");
       if(!list) return;
 
       renderFinanceFilterControl();
 
-      const rows = financeFilteredRows();
       const periodLabel = document.getElementById("financePeriodLabel");
-      if(periodLabel) periodLabel.textContent = financeFilterLabel();
+      const coachPeriod = document.getElementById("coachIncomePeriodText");
+      const periodText = financeFilterLabel();
 
-      const income = rows
-        .filter(x=>x.transaction_type === "income")
-        .reduce((sum,x)=>sum + Number(x.amount || 0),0);
-      const expense = rows
-        .filter(x=>x.transaction_type === "expense")
-        .reduce((sum,x)=>sum + Number(x.amount || 0),0);
+      if(periodLabel) periodLabel.textContent = periodText;
+      if(coachPeriod) coachPeriod.textContent = periodText.replace("Menampilkan ","").replace("Periode: ","");
+
+      const incomeBookings = (db.bookings || []).filter(b=>
+        b.status !== "Cancelled" &&
+        financeDateMatches(b.booking_date)
+      );
+
+      const expenseRows = (db.financeTransactions || []).filter(t=>
+        t.transaction_type === "expense" &&
+        financeDateMatches(t.transaction_date)
+      );
+
+      const income = incomeBookings.reduce(
+        (sum,b)=>sum + Number(b.amount || sessionPrice(b.type,b.pax || 1)),
+        0
+      );
+      const expense = expenseRows.reduce(
+        (sum,t)=>sum + Number(t.amount || 0),
+        0
+      );
       const balance = income - expense;
 
       const incomeEl = document.getElementById("financeIncomeTotal");
@@ -2140,33 +2214,134 @@
       if(expenseEl) expenseEl.textContent = formatMoney(expense);
       if(balanceEl) balanceEl.textContent = formatMoney(balance);
 
-      if(!rows.length){
+      if(coachIncomeList){
+        const coachMap = new Map();
+
+        (db.coaches || []).forEach(c=>{
+          coachMap.set(`id:${c.id}`,{
+            id:c.id,
+            name:c.name || "Coach",
+            amount:0,
+            count:0
+          });
+        });
+
+        incomeBookings.forEach(b=>{
+          const knownCoach = b.coach_id
+            ? (db.coaches || []).find(c=>c.id===b.coach_id)
+            : null;
+
+          const key = knownCoach
+            ? `id:${knownCoach.id}`
+            : `legacy:${b.coach || "Coach dihapus"}`;
+
+          if(!coachMap.has(key)){
+            coachMap.set(key,{
+              id:b.coach_id || null,
+              name:b.coach || "Coach dihapus",
+              amount:0,
+              count:0
+            });
+          }
+
+          const item = coachMap.get(key);
+          item.amount += Number(b.amount || sessionPrice(b.type,b.pax || 1));
+          item.count += 1;
+        });
+
+        const coachRows = [...coachMap.values()].sort((a,b)=>
+          b.amount - a.amount || a.name.localeCompare(b.name,"id")
+        );
+
+        coachIncomeList.innerHTML = coachRows.length
+          ? coachRows.map(c=>`
+              <article class="coach-income-card">
+                <div class="coach-income-head">
+                  <div class="coach-income-avatar">${initials(c.name)}</div>
+                  <div class="coach-income-name">${escapeHtml(c.name)}</div>
+                </div>
+                <div class="coach-income-amount">${formatMoney(c.amount)}</div>
+                <div class="coach-income-count">${c.count} booking aktif</div>
+              </article>
+            `).join("")
+          : `<div class="empty">Belum ada Coach.</div>`;
+      }
+
+      const ledgerRows = [
+        ...incomeBookings.map(b=>({
+          source:"booking",
+          date:b.booking_date,
+          created_at:b.created_at,
+          amount:Number(b.amount || sessionPrice(b.type,b.pax || 1)),
+          type:"income",
+          category:b.type,
+          coach_id:b.coach_id,
+          coach:b.coach,
+          member_id:b.member_id,
+          pax:b.pax || 1,
+          status:b.status,
+          id:b.id
+        })),
+        ...expenseRows.map(t=>({
+          source:"expense",
+          date:t.transaction_date,
+          created_at:t.created_at,
+          amount:Number(t.amount || 0),
+          type:"expense",
+          category:t.category,
+          note:t.note,
+          id:t.id
+        }))
+      ].sort((a,b)=>{
+        const dateCompare = String(b.date || "").localeCompare(String(a.date || ""));
+        if(dateCompare !== 0) return dateCompare;
+        return String(b.created_at || "").localeCompare(String(a.created_at || ""));
+      });
+
+      if(!ledgerRows.length){
         const message = financeFilterMode === "all"
-          ? "Belum ada pemasukan atau pengeluaran."
+          ? "Belum ada pemasukan booking atau pengeluaran."
           : "Tidak ada transaksi pada periode yang dipilih.";
 
         list.innerHTML = `<div class="empty"><div class="emoji">↕</div>${message}</div>`;
         return;
       }
 
-      list.innerHTML = rows.map(t=>{
-        const isIncome = t.transaction_type === "income";
-        const typeLabel = isIncome ? "Pemasukan" : "Pengeluaran";
-        const amountPrefix = isIncome ? "+" : "−";
+      list.innerHTML = ledgerRows.map(t=>{
+        const isIncome = t.type === "income";
+
+        if(isIncome){
+          const coachLabel = t.coach_id ? coachName(t.coach_id) : (t.coach || "Coach dihapus");
+          const paxText = t.category === "Single Session" ? ` · ${Number(t.pax || 1)} pax` : "";
+
+          return `
+            <article class="finance-card">
+              <div class="finance-card-top">
+                <div class="finance-type-icon income">↓</div>
+                <div class="grow">
+                  <div class="finance-title">${escapeHtml(memberName(t.member_id))} · ${escapeHtml(t.category || "Booking")}</div>
+                  <div class="finance-sub">${formatDate(t.date)} · Coach ${escapeHtml(coachLabel)}${paxText}</div>
+                </div>
+                <div class="finance-amount income">+${formatMoney(t.amount)}</div>
+              </div>
+              <div class="finance-source-pill">Otomatis dari booking · ${escapeHtml(t.status || "Booked")}</div>
+            </article>
+          `;
+        }
 
         return `
           <article class="finance-card">
             <div class="finance-card-top">
-              <div class="finance-type-icon ${isIncome ? "income" : "expense"}">${isIncome ? "↓" : "↑"}</div>
+              <div class="finance-type-icon expense">↑</div>
               <div class="grow">
-                <div class="finance-title">${escapeHtml(t.category || typeLabel)}</div>
-                <div class="finance-sub">${typeLabel} · ${formatDate(t.transaction_date)}</div>
+                <div class="finance-title">${escapeHtml(t.category || "Pengeluaran")}</div>
+                <div class="finance-sub">Pengeluaran · ${formatDate(t.date)}</div>
               </div>
-              <div class="finance-amount ${isIncome ? "income" : "expense"}">${amountPrefix}${formatMoney(t.amount)}</div>
+              <div class="finance-amount expense">−${formatMoney(t.amount)}</div>
             </div>
             ${t.note ? `<div class="finance-note">${escapeHtml(t.note)}</div>` : ""}
             <div class="member-actions">
-              <button class="mini-btn" onclick="openFinanceTransaction('${t.transaction_type}','${t.id}')">Edit</button>
+              <button class="mini-btn" onclick="openFinanceTransaction('expense','${t.id}')">Edit</button>
               <button class="mini-btn danger" onclick="deleteFinanceTransaction('${t.id}')">Hapus</button>
             </div>
           </article>
@@ -2174,28 +2349,20 @@
       }).join("");
     }
 
-    function openFinanceTransaction(type="income",id=""){
+    function openFinanceTransaction(type="expense",id=""){
       const transaction = id
         ? db.financeTransactions.find(x=>x.id===id)
         : null;
 
       editingFinanceId = transaction?.id || null;
-      const selectedType = transaction?.transaction_type || type || "income";
+      const selectedType = "expense";
       const today = new Date().toISOString().slice(0,10);
 
       showModal(
-        transaction
-          ? (selectedType === "income" ? "Edit Pemasukan" : "Edit Pengeluaran")
-          : (selectedType === "income" ? "Tambah Pemasukan" : "Tambah Pengeluaran"),
+        transaction ? "Edit Pengeluaran" : "Tambah Pengeluaran",
         `
           <form class="form" onsubmit="saveFinanceTransaction(event)">
-            <div class="field">
-              <label>JENIS TRANSAKSI</label>
-              <select name="transaction_type" required>
-                <option value="income" ${selectedType==="income"?"selected":""}>Pemasukan</option>
-                <option value="expense" ${selectedType==="expense"?"selected":""}>Pengeluaran</option>
-              </select>
-            </div>
+            <input type="hidden" name="transaction_type" value="expense">
 
             <div class="field">
               <label>TANGGAL</label>
@@ -2233,8 +2400,8 @@
       const btn = document.getElementById("saveFinanceBtn");
       const amount = Math.round(Number(f.amount || 0));
 
-      if(!["income","expense"].includes(f.transaction_type)){
-        return alert("Jenis transaksi tidak valid.");
+      if(f.transaction_type !== "expense"){
+        return alert("Pemasukan dibuat otomatis dari booking Member.");
       }
 
       if(!Number.isFinite(amount) || amount <= 0){
@@ -2279,8 +2446,8 @@
 
       showToast(
         wasEditing
-          ? "Transaksi berhasil diperbarui"
-          : (transactionType === "income" ? "Pemasukan berhasil ditambahkan" : "Pengeluaran berhasil ditambahkan")
+          ? "Pengeluaran berhasil diperbarui"
+          : "Pengeluaran berhasil ditambahkan"
       );
     }
 
@@ -2288,8 +2455,7 @@
       const transaction = db.financeTransactions.find(x=>x.id===id);
       if(!transaction) return;
 
-      const label = transaction.transaction_type === "income" ? "pemasukan" : "pengeluaran";
-      if(!confirm(`Hapus ${label} ${formatMoney(transaction.amount)}?`)) return;
+      if(!confirm(`Hapus pengeluaran ${formatMoney(transaction.amount)}?`)) return;
 
       const { error } = await sb
         .from("finance_transactions")
@@ -3058,10 +3224,12 @@
         old.booking_date === f.booking_date &&
         String(old.booking_time || "").slice(0,5) === String(f.booking_time || "").slice(0,5);
 
+      const bookingPax = normalizePax(f.type,f.pax);
       const payload = {
         member_id: f.member_id,
         type: f.type,
-        pax: normalizePax(f.type,f.pax),
+        pax: bookingPax,
+        amount: sessionPrice(f.type,bookingPax),
         booking_date: f.booking_date,
         booking_time: f.booking_time,
         coach_id: f.coach_id || null,
