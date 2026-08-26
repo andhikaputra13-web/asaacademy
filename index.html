@@ -822,7 +822,6 @@
         <button class="member-session" onclick="selectPublicSession('Single Session')"><div class="member-session-icon">🎾</div><div class="member-session-info"><strong>Single Session</strong><span>1–4 pax · Mulai Rp 500.000 · Termasuk court</span></div><div class="member-chevron">›</div></button>
         <button class="member-session" onclick="selectPublicSession('Package 4 Session')"><div class="member-session-icon">4×</div><div class="member-session-info"><strong>Package 4 Session</strong><span>4 coaching sessions · Rp 2.000.000 · Termasuk court</span></div><div class="member-chevron">›</div></button>
         <button class="member-session" onclick="selectPublicSession('Package 8 Session')"><div class="member-session-icon">8×</div><div class="member-session-info"><strong>Package 8 Session</strong><span>8 coaching sessions · Rp 3.850.000 · Termasuk court</span></div><div class="member-chevron">›</div></button>
-        <button class="member-session" onclick="selectPublicSession('Hitting Partner')"><div class="member-session-icon">🎾</div><div class="member-session-info"><strong>Hitting Partner</strong><span>1 session · Rp 350.000 · Termasuk court</span></div><div class="member-chevron">›</div></button>
       </div>
       <div class="public-session-note">Semua harga sudah termasuk court.</div>
     </div>
@@ -884,7 +883,6 @@
           <button class="member-session" onclick="openMemberBooking('Single Session')"><div class="member-session-icon">🎾</div><div class="member-session-info"><strong>Single Session</strong><span>1–4 pax · Mulai Rp 500.000 · Termasuk court</span></div><div class="member-chevron">›</div></button>
           <button class="member-session" onclick="openMemberBooking('Package 4 Session')"><div class="member-session-icon">4×</div><div class="member-session-info"><strong>Package 4 Session</strong><span>4 coaching sessions · Rp 2.000.000 · Termasuk court</span></div><div class="member-chevron">›</div></button>
           <button class="member-session" onclick="openMemberBooking('Package 8 Session')"><div class="member-session-icon">8×</div><div class="member-session-info"><strong>Package 8 Session</strong><span>8 coaching sessions · Rp 3.850.000 · Termasuk court</span></div><div class="member-chevron">›</div></button>
-          <button class="member-session" onclick="openMemberBooking('Hitting Partner')"><div class="member-session-icon">🎾</div><div class="member-session-info"><strong>Hitting Partner</strong><span>1 session · Rp 350.000 · Termasuk court</span></div><div class="member-chevron">›</div></button>
         </div>
         <div class="member-section-title" style="margin-top:24px"><h2>Booking Saya</h2></div>
         <div id="memberBookingList" class="member-booking-list"></div>
@@ -996,12 +994,6 @@
             <div class="grow"><h3>Package 8 Session</h3></div>
             <div class="price"><strong>Rp 3.850.000</strong><span>8 Sessions · Termasuk court</span></div>
           </button>
-
-          <button class="session-card" onclick="openBooking('Hitting Partner')">
-            <div class="session-icon">🎾</div>
-            <div class="grow"><h3>Hitting Partner</h3></div>
-            <div class="price"><strong>Rp 350.000</strong><span>1 Session · Termasuk court</span></div>
-          </button>
         </div>
 
         <div class="section-head">
@@ -1022,7 +1014,6 @@
           <button class="chip" data-filter="Single Session">Single</button>
           <button class="chip" data-filter="Package 4 Session">4 Session</button>
           <button class="chip" data-filter="Package 8 Session">8 Session</button>
-          <button class="chip" data-filter="Hitting Partner">Hitting Partner</button>
         </div>
         <div style="height:10px"></div>
         <div id="bookingList" class="list"></div>
@@ -1650,7 +1641,7 @@ try{
                 <strong>${escapeHtml(b.type)}</strong>
                 <div class="member-booking-meta">
                   ${formatDate(b.booking_date)} · ${String(b.booking_time || "").slice(0,5)}<br>
-                  Coach ${escapeHtml(b.coach || "ASA")}${b.type==="Single Session" ? ` · ${Number(b.pax || 1)} pax` : ""}
+                  Court ${escapeHtml(b.court || "Belum ditentukan")} · Coach ${escapeHtml(b.coach || "ASA")}${b.type==="Single Session" ? ` · ${Number(b.pax || 1)} pax` : ""}
                 </div>
               </div>
               <span class="member-booking-status ${statusClass}">${escapeHtml(statusText)}</span>
@@ -1682,7 +1673,10 @@ try{
     const SESSION_PRICES = {
       "Single Session": 500000,
       "Package 4 Session": 2000000,
-      "Package 8 Session": 3850000,
+      "Package 8 Session": 3850000
+    };
+
+    const LEGACY_SESSION_PRICES = {
       "Hitting Partner": 350000
     };
 
@@ -1692,7 +1686,7 @@ try{
     }
 
     function sessionPrice(type,pax=1){
-      const base = SESSION_PRICES[type] || 0;
+      const base = SESSION_PRICES[type] ?? LEGACY_SESSION_PRICES[type] ?? 0;
       if(type === "Single Session"){
         return base + ((normalizePax(type,pax) - 1) * 100000);
       }
@@ -1730,6 +1724,30 @@ try{
       if(priceEl) priceEl.value = formatRupiah(sessionPrice(type,select.value));
     }
 
+    function toggleCourtOther(select,fieldId){
+      const field = document.getElementById(fieldId);
+      const input = field?.querySelector("input");
+      const isOther = select.value === "Lainnya";
+
+      if(field) field.style.display = isOther ? "" : "none";
+      if(input){
+        input.required = isOther;
+        if(!isOther) input.value = "";
+      }
+    }
+
+    function resolveCourtSelection(choice,other){
+      const selected = String(choice || "").trim();
+      const custom = String(other || "").trim();
+
+      if(selected === "Lainnya"){
+        return custom;
+      }
+
+      return selected;
+    }
+
+
     function openMemberBooking(type){
       if(!memberCoaches.length){
         showModal("Booking Session", `<div class="member-empty">Coach belum tersedia.</div>`);
@@ -1764,6 +1782,21 @@ try{
           <div class="field">
             <label>HARGA · SUDAH TERMASUK COURT</label>
             <input id="memberBookingPrice" value="${attr(formatRupiah(sessionPrice(type,1)))}" disabled>
+          </div>
+
+          <div class="field">
+            <label>COURT</label>
+            <select name="court_choice" required onchange="toggleCourtOther(this,'memberCourtOtherField')">
+              <option value="">Pilih court</option>
+              <option value="Racket Hour">Racket Hour</option>
+              <option value="Little Racquet Club">Little Racquet Club</option>
+              <option value="Lainnya">Lainnya</option>
+            </select>
+          </div>
+
+          <div class="field" id="memberCourtOtherField" style="display:none">
+            <label>NAMA COURT LAINNYA</label>
+            <input name="court_other" maxlength="120">
           </div>
 
           <div class="field">
@@ -1861,6 +1894,9 @@ try{
       if(!currentMember?.id) return alert("Data member belum terhubung.");
       if(!slot || !coach) return alert("Pilih coach dan jam yang tersedia.");
 
+      const court = resolveCourtSelection(f.court_choice,f.court_other);
+      if(!court) return alert(f.court_choice === "Lainnya" ? "Isi nama court lainnya." : "Pilih court terlebih dahulu.");
+
       btn.disabled = true;
       btn.textContent = "Memproses...";
 
@@ -1871,6 +1907,7 @@ try{
         type: f.type,
         pax,
         amount: sessionPrice(f.type,pax),
+        court,
         booking_date: f.date,
         booking_time: slot.slot_time,
         coach_id: coach.id,
@@ -1902,8 +1939,8 @@ try{
         `Session: ${f.type}`,
         f.type === "Single Session" ? `Jumlah Pax: ${pax} pax` : "",
         `Harga: ${formatRupiah(sessionPrice(f.type,pax))} (sudah termasuk court)`,
+        `Court: ${court}`,
         `Coach: ${coach.name}`,
-        f.type === "Hitting Partner" ? "Hitting Partner: Ya" : "",
         `Tanggal: ${formatDate(f.date)}`,
         `Jam: ${String(slot.slot_time).slice(0,5)}`,
         "Status: Menunggu konfirmasi Admin",
@@ -1982,7 +2019,9 @@ try{
             <div class="slot-time">${String(b.booking_time).slice(0,5)}</div>
             <div class="slot-info">
               <strong>${escapeHtml(m?.name || "Member")}</strong>
-              <span>${formatDate(b.booking_date)} · ${escapeHtml(b.type)}${b.type==="Single Session" ? ` · ${Number(b.pax || 1)} pax` : ""}</span><span>${formatRupiah(sessionPrice(b.type,b.pax || 1))} · Termasuk court</span>
+              <span>${formatDate(b.booking_date)} · ${escapeHtml(b.type)}${b.type==="Single Session" ? ` · ${Number(b.pax || 1)} pax` : ""}</span>
+              <span>📍 ${escapeHtml(b.court || "Belum ditentukan")}</span>
+              <span>${formatRupiah(sessionPrice(b.type,b.pax || 1))} · Termasuk court</span>
             </div>
             <span class="status-dot">${escapeHtml(b.status)}</span>
           </div>
@@ -2242,6 +2281,7 @@ try{
           <div class="meta-row">
             <span>📅 ${formatDate(b.booking_date)}</span>
             <span>🕒 ${escapeHtml(String(b.booking_time || "").slice(0,5))}</span>
+            <span>📍 ${escapeHtml(b.court || "Belum ditentukan")}</span>
             ${b.type==="Single Session" ? `<span>👥 ${Number(b.pax || 1)} pax</span>` : ""}
             <span>💳 ${formatRupiah(Number(b.amount || sessionPrice(b.type,b.pax || 1)))}</span>
           </div>
@@ -2281,6 +2321,7 @@ try{
               <span>📅 ${formatDate(b.booking_date)}</span>
               <span>🕒 ${escapeHtml(String(b.booking_time || "").slice(0,5))}</span>
               <span>🎾 ${escapeHtml(b.coach_id ? coachName(b.coach_id) : (b.coach || "Coach ASA"))}</span>
+              <span>📍 ${escapeHtml(b.court || "Belum ditentukan")}</span>
               ${b.type==="Single Session" ? `<span>👥 ${Number(b.pax || 1)} pax</span>` : ""}
               <span>💳 ${formatRupiah(sessionPrice(b.type,b.pax || 1))} · Termasuk court</span>
             </div>
@@ -3574,6 +3615,12 @@ document.getElementById("modalTitle").textContent = title;
       const selectedDate = b?.booking_date || "";
       const selectedTime = String(b?.booking_time || "").slice(0,5);
       const selectedPax = normalizePax(selectedType,b?.pax || 1);
+      const selectedCourt = b?.court || "";
+      const standardCourts = ["Racket Hour","Little Racquet Club"];
+      const selectedCourtChoice = standardCourts.includes(selectedCourt)
+        ? selectedCourt
+        : (selectedCourt ? "Lainnya" : "");
+      const selectedCourtOther = selectedCourtChoice === "Lainnya" ? selectedCourt : "";
       const selectedNote = b?.note || "";
 
       showModal(b ? "Edit Booking" : "Tambah Booking", `
@@ -3586,7 +3633,7 @@ document.getElementById("modalTitle").textContent = title;
           <div class="field">
             <label>PROGRAM</label>
             <select name="type" required onchange="updateAdminBookingPrice(this)">
-              ${["Single Session","Package 4 Session","Package 8 Session","Hitting Partner"].map(x=>`<option ${selectedType===x?"selected":""}>${x}</option>`).join("")}
+              ${["Single Session","Package 4 Session","Package 8 Session"].map(x=>`<option ${selectedType===x?"selected":""}>${x}</option>`).join("")}
             </select>
           </div>
 
@@ -3601,6 +3648,21 @@ document.getElementById("modalTitle").textContent = title;
           <div class="field">
             <label>HARGA · SUDAH TERMASUK COURT</label>
             <input id="adminBookingPrice" value="${attr(formatRupiah(sessionPrice(selectedType,selectedPax)))}" disabled>
+          </div>
+
+          <div class="field">
+            <label>COURT</label>
+            <select name="court_choice" required onchange="toggleCourtOther(this,'adminCourtOtherField')">
+              <option value="">Pilih court</option>
+              <option value="Racket Hour" ${selectedCourtChoice==="Racket Hour"?"selected":""}>Racket Hour</option>
+              <option value="Little Racquet Club" ${selectedCourtChoice==="Little Racquet Club"?"selected":""}>Little Racquet Club</option>
+              <option value="Lainnya" ${selectedCourtChoice==="Lainnya"?"selected":""}>Lainnya</option>
+            </select>
+          </div>
+
+          <div class="field" id="adminCourtOtherField" style="${selectedCourtChoice==="Lainnya" ? "" : "display:none"}">
+            <label>NAMA COURT LAINNYA</label>
+            <input name="court_other" maxlength="120" value="${attr(selectedCourtOther)}" ${selectedCourtChoice==="Lainnya" ? "required" : ""}>
           </div>
 
           <div class="two-col">
@@ -3641,6 +3703,13 @@ document.getElementById("modalTitle").textContent = title;
 
       const f = Object.fromEntries(new FormData(e.target).entries());
       const old = editingBookingId ? db.bookings.find(x=>x.id===editingBookingId) : null;
+      const court = resolveCourtSelection(f.court_choice,f.court_other);
+
+      if(!court){
+        btn.disabled = false;
+        btn.textContent = editingBookingId ? "Simpan Perubahan" : "Simpan Booking";
+        return alert(f.court_choice === "Lainnya" ? "Isi nama court lainnya." : "Pilih court terlebih dahulu.");
+      }
 
       const sameSlotDetails = !!old &&
         old.coach_id === (f.coach_id || null) &&
@@ -3653,6 +3722,7 @@ document.getElementById("modalTitle").textContent = title;
         type: f.type,
         pax: bookingPax,
         amount: sessionPrice(f.type,bookingPax),
+        court,
         booking_date: f.booking_date,
         booking_time: f.booking_time,
         coach_id: f.coach_id || null,
@@ -3730,7 +3800,7 @@ document.getElementById("modalTitle").textContent = title;
 
           <div class="field"><label>SESSION</label>
             <select name="session">
-              ${["Single Session","Package 4 Session","Package 8 Session","Hitting Partner"].map(x=>`<option ${selectedSession===x?"selected":""}>${x}</option>`).join("")}
+              ${["Single Session","Package 4 Session","Package 8 Session"].map(x=>`<option ${selectedSession===x?"selected":""}>${x}</option>`).join("")}
             </select>
           </div>
 
