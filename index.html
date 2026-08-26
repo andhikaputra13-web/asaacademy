@@ -65,6 +65,39 @@
     button{cursor:pointer}
     .hidden{display:none!important}
 
+
+    /* PUBLIC BOOKING LANDING */
+    .public-booking-screen{min-height:100vh;padding:20px 16px 34px}
+    .public-booking-wrap{width:min(100%,520px);margin:0 auto}
+    .public-booking-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:34px}
+    .public-brand{display:flex;align-items:center;gap:10px}
+    .public-logo{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:var(--text);color:var(--brand);font-size:13px;font-weight:950;letter-spacing:-.7px}
+    .public-brand strong{font-size:15px;font-weight:900;letter-spacing:-.03em}
+    .public-login-btn{border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:14px;padding:10px 14px;font-size:10px;font-weight:850}
+    .public-hero{padding:0 2px 23px}
+    .public-hero .eyebrow{font-size:10px;color:var(--muted);margin-bottom:7px}
+    .public-hero h1{margin:0;max-width:420px;font-size:30px;line-height:1.05;letter-spacing:-.055em}
+    .public-hero p{margin:11px 0 0;max-width:430px;font-size:11px;line-height:1.55;color:var(--muted)}
+    .public-session-note{margin:13px 2px 0;font-size:9.5px;color:var(--muted);text-align:center}
+    .auth-back-btn{border:0;background:transparent;color:var(--muted);padding:0;margin:0 0 13px;font-size:10px;font-weight:800}
+    .auth-context{margin:-8px 0 15px;font-size:10px;color:var(--muted);line-height:1.45}
+    .signup-form.hidden{display:none!important}
+    .pending-box{border:1px solid #eadfb9;background:#fff9e8;border-radius:18px;padding:13px;margin-bottom:14px}
+    body.dark .pending-box{background:#302b1e;border-color:#4a4127}
+    .pending-box strong{display:block;font-size:11px;margin-bottom:3px}
+    .pending-box span{font-size:9.5px;line-height:1.45;color:var(--muted)}
+    .badge.pending{background:#fff1c9;color:#936913}
+    body.dark .badge.pending{background:#3b321d;color:#e8c86f}
+    .member-booking-list{display:grid;gap:9px;margin-top:6px}
+    .member-booking-card{border:1px solid var(--line);background:var(--surface);border-radius:18px;padding:14px}
+    .member-booking-top{display:flex;align-items:flex-start;gap:10px}
+    .member-booking-top strong{display:block;font-size:12px;margin-bottom:3px}
+    .member-booking-meta{font-size:9.5px;color:var(--muted);line-height:1.5}
+    .member-booking-status{margin-left:auto;font-size:8.5px;font-weight:850;padding:6px 8px;border-radius:999px;background:var(--surface-soft);white-space:nowrap}
+    .member-booking-status.pending{background:#fff1c9;color:#936913}
+    .member-booking-status.completed{background:#e8f5d2;color:#55791d}
+    .member-booking-status.cancelled{background:#fff0f0;color:#a43d3d}
+
     /* AUTH */
     .auth-screen{
       min-height:100vh;
@@ -725,43 +758,113 @@
       .app{background:rgba(255,255,255,.12);border-radius:36px}
       .bottom-nav{bottom:24px}
     }
-  </style>
+  
+    /* Robust modal scroll locking */
+    html.modal-open,
+    body.modal-open{
+      overflow:hidden !important;
+      overscroll-behavior:none !important;
+      touch-action:none;
+    }
+
+    body.modal-open{
+      position:fixed;
+      width:100%;
+      left:0;
+      right:0;
+    }
+
+    .modal-overlay{
+      overscroll-behavior:contain;
+      touch-action:none;
+    }
+
+    .modal-card{
+      max-height:min(88dvh, 760px);
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+      overscroll-behavior:contain;
+    }
+
+    .modal-body{
+      min-height:0;
+      overflow-y:auto;
+      overflow-x:hidden;
+      -webkit-overflow-scrolling:touch;
+      overscroll-behavior:contain;
+      touch-action:pan-y;
+    }
+
+    @supports not (height: 100dvh){
+      .modal-card{max-height:88vh}
+    }
+
+</style>
 </head>
 <body>
 
-  <!-- LOGIN / SIGN UP -->
-  <section id="authScreen" class="auth-screen">
+  <!-- PUBLIC BOOKING LANDING -->
+  <section id="publicBookingScreen" class="public-booking-screen">
+    <div class="public-booking-wrap">
+      <header class="public-booking-head">
+        <div class="public-brand"><div class="public-logo">ASA</div><strong>ASA Academy</strong></div>
+        <button class="public-login-btn" type="button" onclick="openAuth('login')">Login</button>
+      </header>
+
+      <div class="public-hero">
+        <div class="eyebrow">BOOKING SESSION</div>
+        <h1>Choose your<br>next session.</h1>
+        <p>Pilih session terlebih dahulu. Setelah itu login atau buat akun untuk menentukan Coach, tanggal, dan jam.</p>
+      </div>
+
+      <div class="member-session-list">
+        <button class="member-session" onclick="selectPublicSession('Single Session')"><div class="member-session-icon">🎾</div><div class="member-session-info"><strong>Single Session</strong><span>1–4 pax · Mulai Rp 500.000 · Termasuk court</span></div><div class="member-chevron">›</div></button>
+        <button class="member-session" onclick="selectPublicSession('Package 4 Session')"><div class="member-session-icon">4×</div><div class="member-session-info"><strong>Package 4 Session</strong><span>4 coaching sessions · Rp 2.000.000 · Termasuk court</span></div><div class="member-chevron">›</div></button>
+        <button class="member-session" onclick="selectPublicSession('Package 8 Session')"><div class="member-session-icon">8×</div><div class="member-session-info"><strong>Package 8 Session</strong><span>8 coaching sessions · Rp 3.850.000 · Termasuk court</span></div><div class="member-chevron">›</div></button>
+        <button class="member-session" onclick="selectPublicSession('Hitting Partner')"><div class="member-session-icon">🎾</div><div class="member-session-info"><strong>Hitting Partner</strong><span>1 session · Rp 350.000 · Termasuk court</span></div><div class="member-chevron">›</div></button>
+      </div>
+      <div class="public-session-note">Semua harga sudah termasuk court.</div>
+    </div>
+  </section>
+
+  <!-- LOGIN / CREATE ACCOUNT -->
+  <section id="authScreen" class="auth-screen hidden">
     <div class="auth-wrap">
+      <button class="auth-back-btn" type="button" onclick="showPublicBooking()">← Kembali ke booking</button>
+
       <div class="auth-brand">
         <div class="auth-logo">ASA</div>
-        <div>
-          <h1>ASA Academy</h1>
-          
-        </div>
+        <div><h1>ASA Academy</h1></div>
       </div>
 
       <div class="auth-card">
-        <h2 id="authTitle">Login</h2>
+        <div class="auth-tabs">
+          <button id="loginTabBtn" class="auth-tab active" type="button" onclick="setAuthMode('login')">Login</button>
+          <button id="signupTabBtn" class="auth-tab" type="button" onclick="setAuthMode('signup')">Buat Akun</button>
+        </div>
 
+        <h2 id="authTitle">Login</h2>
+        <div id="authContext" class="auth-context"></div>
         <div id="authMessage" class="auth-message"></div>
 
         <form id="authForm" class="form">
-          <div class="field">
-            <label>EMAIL</label>
-            <input id="authEmail" type="email" autocomplete="email" required />
-          </div>
-
-          <div class="field">
-            <label>PASSWORD</label>
-            <input id="authPassword" type="password" autocomplete="current-password" required minlength="6" />
-          </div>
-
+          <div class="field"><label>EMAIL</label><input id="authEmail" type="email" autocomplete="email" required /></div>
+          <div class="field"><label>PASSWORD</label><input id="authPassword" type="password" autocomplete="current-password" required minlength="6" /></div>
           <button id="authSubmit" class="primary-btn lime" type="submit">Login</button>
+        </form>
+
+        <form id="signupForm" class="form signup-form hidden">
+          <div class="field"><label>NAMA</label><input id="signupName" name="name" autocomplete="name" required /></div>
+          <div class="field"><label>NO. HP</label><input id="signupPhone" name="phone" type="tel" autocomplete="tel" required /></div>
+          <div class="field"><label>EMAIL</label><input id="signupEmail" name="email" type="email" autocomplete="email" required /></div>
+          <div class="field"><label>PASSWORD</label><input id="signupPassword" name="password" type="password" autocomplete="new-password" minlength="6" required /></div>
+          <div class="field"><label>ULANGI PASSWORD</label><input id="signupPasswordRepeat" name="password_repeat" type="password" autocomplete="new-password" minlength="6" required /></div>
+          <button id="signupSubmit" class="primary-btn lime" type="submit">Buat Akun</button>
         </form>
       </div>
     </div>
   </section>
-
 
   <!-- MEMBER APP -->
   <div id="memberShell" class="hidden">
@@ -783,6 +886,8 @@
           <button class="member-session" onclick="openMemberBooking('Package 8 Session')"><div class="member-session-icon">8×</div><div class="member-session-info"><strong>Package 8 Session</strong><span>8 coaching sessions · Rp 3.850.000 · Termasuk court</span></div><div class="member-chevron">›</div></button>
           <button class="member-session" onclick="openMemberBooking('Hitting Partner')"><div class="member-session-icon">🎾</div><div class="member-session-info"><strong>Hitting Partner</strong><span>1 session · Rp 350.000 · Termasuk court</span></div><div class="member-chevron">›</div></button>
         </div>
+        <div class="member-section-title" style="margin-top:24px"><h2>Booking Saya</h2></div>
+        <div id="memberBookingList" class="member-booking-list"></div>
       </section>
       <section id="memberReviewPage" class="member-page"><div class="member-section-title"><h2>Review Saya</h2></div><div id="memberReviewList" class="member-review-list"></div></section>
     </main>
@@ -900,6 +1005,15 @@
         </div>
 
         <div class="section-head">
+          <div>
+            <h2>Perlu Konfirmasi</h2>
+            <p>Booking Member yang belum dikonfirmasi Admin</p>
+          </div>
+          <span id="pendingBookingCount" class="badge pending">0</span>
+        </div>
+        <div id="pendingBookingList" class="list"></div>
+
+        <div class="section-head" style="margin-top:22px">
           <div><h2>Recent Booking</h2></div>
         </div>
 
@@ -966,7 +1080,7 @@
             <div class="finance-auto-icon">↘</div>
             <div>
               <strong>Pemasukan otomatis dari booking</strong>
-              <span>Booking Member otomatis masuk ke pemasukan Coach yang dipilih. Pemasukan manual tetap bisa ditambahkan Admin dan masuk ke pemasukan keseluruhan. Booking Cancelled tidak dihitung.</span>
+              <span>Pemasukan booking otomatis baru dihitung setelah Admin menandai booking sebagai Completed. Pemasukan manual tetap bisa ditambahkan Admin dan masuk ke pemasukan keseluruhan.</span>
             </div>
           </div>
 
@@ -1062,6 +1176,7 @@
     const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
     let currentUser = null;
+    let pendingPublicSession = null;
     let activePage = "bookingPage";
     let bookingFilter = "all";
     let editingMemberId = null;
@@ -1080,6 +1195,7 @@
     };
 
     let memberCoaches = [];
+    let memberBookings = [];
     let lastMemberSlots = [];
     let currentCoach = null;
     let coachBookings = [];
@@ -1134,7 +1250,77 @@
       applyTheme(saved || preferred);
     }
 
+
+    function isInsideScrollableModal(target){
+      return target?.closest?.(".modal-body");
+    }
+
+    document.addEventListener("wheel", (e)=>{
+      if(!document.body.classList.contains("modal-open")) return;
+      if(!isInsideScrollableModal(e.target)){
+        e.preventDefault();
+      }
+    }, {passive:false});
+
+    document.addEventListener("touchmove", (e)=>{
+      if(!document.body.classList.contains("modal-open")) return;
+      if(!isInsideScrollableModal(e.target)){
+        e.preventDefault();
+      }
+    }, {passive:false});
+
+
+
+    document.addEventListener("touchstart", (e)=>{
+      if(!document.body.classList.contains("modal-open")) return;
+      const scroller = isInsideScrollableModal(e.target);
+      if(!scroller) return;
+
+      if(scroller.scrollTop <= 0){
+        scroller.scrollTop = 1;
+      }else if(scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight){
+        scroller.scrollTop = Math.max(0, scroller.scrollHeight - scroller.clientHeight - 1);
+      }
+    }, {passive:true});
+
+
     // ---------------- AUTH ----------------
+    function showPublicBooking(){
+      document.getElementById("publicBookingScreen")?.classList.remove("hidden");
+      document.getElementById("authScreen")?.classList.add("hidden");
+      document.getElementById("appShell")?.classList.add("hidden");
+      document.getElementById("memberShell")?.classList.add("hidden");
+      document.getElementById("coachShell")?.classList.add("hidden");
+      clearAuthMessage();
+    }
+
+    function selectPublicSession(type){
+      pendingPublicSession = type;
+      openAuth("login");
+    }
+
+    function openAuth(mode="login"){
+      document.getElementById("publicBookingScreen")?.classList.add("hidden");
+      document.getElementById("authScreen")?.classList.remove("hidden");
+      document.getElementById("appShell")?.classList.add("hidden");
+      document.getElementById("memberShell")?.classList.add("hidden");
+      document.getElementById("coachShell")?.classList.add("hidden");
+      setAuthMode(mode);
+    }
+
+    function setAuthMode(mode){
+      const signup = mode === "signup";
+      document.getElementById("loginTabBtn")?.classList.toggle("active", !signup);
+      document.getElementById("signupTabBtn")?.classList.toggle("active", signup);
+      document.getElementById("authForm")?.classList.toggle("hidden", signup);
+      document.getElementById("signupForm")?.classList.toggle("hidden", !signup);
+      document.getElementById("authTitle").textContent = signup ? "Buat Akun" : "Login";
+      document.getElementById("authContext").textContent = pendingPublicSession
+        ? `${signup ? "Buat akun" : "Login"} untuk melanjutkan ${pendingPublicSession}.`
+        : (signup ? "Buat akun Member dan langsung mulai booking." : "Masuk ke akun ASA Academy.");
+      clearAuthMessage();
+    }
+
     function showAuthMessage(message, type="error"){
       const el = document.getElementById("authMessage");
       el.textContent = message;
@@ -1170,10 +1356,58 @@
       }
     });
 
+    document.getElementById("signupForm").addEventListener("submit", async (e)=>{
+      e.preventDefault();
+      clearAuthMessage();
+
+      const f = Object.fromEntries(new FormData(e.target).entries());
+      const name = String(f.name || "").trim();
+      const phone = String(f.phone || "").trim();
+      const email = String(f.email || "").trim().toLowerCase();
+      const password = String(f.password || "");
+      const passwordRepeat = String(f.password_repeat || "");
+      const btn = document.getElementById("signupSubmit");
+
+      if(password !== passwordRepeat){
+        return showAuthMessage("Password dan ulangi password harus sama.");
+      }
+
+      btn.disabled = true;
+      btn.textContent = "Membuat akun...";
+
+      try{
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/public-signup`, {
+          method:"POST",
+          headers:{
+            "Content-Type":"application/json",
+            "apikey":SUPABASE_PUBLISHABLE_KEY
+          },
+          body:JSON.stringify({name,phone,email,password})
+        });
+
+        const payload = await response.json().catch(()=>({}));
+        if(!response.ok || payload?.error){
+          throw new Error(payload?.error || "Gagal membuat akun.");
+        }
+
+        const { data, error } = await sb.auth.signInWithPassword({email,password});
+        if(error) throw error;
+
+        await handleSignedIn(data.user);
+        showToast("Akun berhasil dibuat dan langsung aktif.");
+      }catch(err){
+        showAuthMessage(translateAuthError(err?.message || "Gagal membuat akun."));
+      }finally{
+        btn.disabled = false;
+        btn.textContent = "Buat Akun";
+      }
+    });
+
     function translateAuthError(message){
       const m = String(message).toLowerCase();
       if(m.includes("invalid login credentials")) return "Email atau password salah.";
       if(m.includes("email not confirmed")) return "Akun belum aktif.";
+      if(m.includes("email sudah terdaftar") || m.includes("already registered") || m.includes("already been registered")) return "Email sudah terdaftar. Silakan login.";
       if(m.includes("password should be")) return "Password terlalu pendek.";
       if(m.includes("rate limit")) return "Terlalu banyak percobaan. Coba beberapa saat lagi.";
       return message;
@@ -1199,13 +1433,15 @@
       document.getElementById("appShell")?.classList.add("hidden");
       document.getElementById("memberShell")?.classList.add("hidden");
       document.getElementById("coachShell")?.classList.add("hidden");
-      document.getElementById("authScreen")?.classList.remove("hidden");
+      document.getElementById("authScreen")?.classList.add("hidden");
+      document.getElementById("publicBookingScreen")?.classList.remove("hidden");
 
+      memberBookings = [];
       const passwordInput = document.getElementById("authPassword");
       if(passwordInput) passwordInput.value = "";
 
-      if(message) showAuthMessage(message);
-      else clearAuthMessage();
+      clearAuthMessage();
+      if(message) setTimeout(()=>showToast(message),0);
     }
 
     async function getActiveAccessToken(){
@@ -1295,6 +1531,7 @@
       currentUser = user;
       currentProfile = profile;
       document.getElementById("authScreen").classList.add("hidden");
+      document.getElementById("publicBookingScreen")?.classList.add("hidden");
 
       if(profile.role === "admin"){
         document.getElementById("memberShell").classList.add("hidden");
@@ -1302,17 +1539,25 @@
         document.getElementById("appShell").classList.remove("hidden");
         const name = profile.full_name || user?.user_metadata?.display_name || "ASA";
         document.getElementById("adminIdentity").textContent = `${name} · ${user?.email || ""}`;
+        pendingPublicSession = null;
         await loadAllData();
       }else if(profile.role === "coach"){
         document.getElementById("appShell").classList.add("hidden");
         document.getElementById("memberShell").classList.add("hidden");
         document.getElementById("coachShell").classList.remove("hidden");
+        pendingPublicSession = null;
         await loadCoachData();
       }else{
         document.getElementById("appShell").classList.add("hidden");
         document.getElementById("coachShell").classList.add("hidden");
         document.getElementById("memberShell").classList.remove("hidden");
         await loadMemberData();
+
+        if(pendingPublicSession){
+          const selectedSession = pendingPublicSession;
+          pendingPublicSession = null;
+          setTimeout(()=>openMemberBooking(selectedSession),80);
+        }
       }
       checkingRole = false;
     }
@@ -1347,12 +1592,7 @@
     });
 
     async function init(){
-      const { data: { session } } = await sb.auth.getSession();
-      if(session?.user){
-        await handleSignedIn(session.user);
-      }else{
-        document.getElementById("authScreen").classList.remove("hidden");
-      }
+      showPublicBooking();
     }
 
 
@@ -1367,10 +1607,54 @@
       currentMember = member;
       document.getElementById("memberName").textContent = member?.name || currentProfile?.full_name || "Member";
 
-      const { data: coachesData } = await sb.from("coaches").select("id,name,is_active").eq("is_active",true).order("created_at");
-      memberCoaches = coachesData || [];
+      const [coachesRes, bookingsRes] = await Promise.all([
+        sb.from("coaches").select("id,name,is_active").eq("is_active",true).order("created_at"),
+        member?.id
+          ? sb.from("bookings").select("*").eq("member_id",member.id).order("booking_date",{ascending:false}).order("booking_time",{ascending:false})
+          : Promise.resolve({data:[],error:null})
+      ]);
+
+      memberCoaches = coachesRes.data || [];
+      memberBookings = bookingsRes.data || [];
+      renderMemberBookings();
 
       await loadMyReviews();
+    }
+
+    function renderMemberBookings(){
+      const list = document.getElementById("memberBookingList");
+      if(!list) return;
+
+      if(!memberBookings.length){
+        list.innerHTML = `<div class="member-empty">Belum ada booking.</div>`;
+        return;
+      }
+
+      list.innerHTML = memberBookings.map(b=>{
+        const statusClass =
+          b.status === "Pending Confirmation" ? "pending" :
+          b.status === "Completed" ? "completed" :
+          b.status === "Cancelled" ? "cancelled" : "";
+
+        const statusText =
+          b.status === "Pending Confirmation" ? "Menunggu Konfirmasi" :
+          b.status === "Cancelled" ? "Cancelled" : b.status;
+
+        return `
+          <article class="member-booking-card">
+            <div class="member-booking-top">
+              <div class="grow">
+                <strong>${escapeHtml(b.type)}</strong>
+                <div class="member-booking-meta">
+                  ${formatDate(b.booking_date)} · ${String(b.booking_time || "").slice(0,5)}<br>
+                  Coach ${escapeHtml(b.coach || "ASA")}${b.type==="Single Session" ? ` · ${Number(b.pax || 1)} pax` : ""}
+                </div>
+              </div>
+              <span class="member-booking-status ${statusClass}">${escapeHtml(statusText)}</span>
+            </div>
+          </article>
+        `;
+      }).join("");
     }
 
     async function loadMyReviews(){
@@ -1505,7 +1789,11 @@
             <textarea name="note"></textarea>
           </div>
 
-          <button class="wa-btn" type="submit"><span>Booking via WhatsApp</span><span>→</span></button>
+          <div class="pending-box">
+            <strong>Booking perlu dikonfirmasi Admin</strong>
+            <span>Jam akan diamankan setelah booking dikirim. Status awal: Pending Confirmation.</span>
+          </div>
+          <button class="wa-btn" type="submit"><span>Kirim Booking</span><span>→</span></button>
         </form>
       `);
     }
@@ -1586,12 +1874,12 @@
         slot_id: slot.id,
         coach: coach.name,
         note: f.note || null,
-        status: "Booked"
+        status: "Pending Confirmation"
       });
 
       if(error){
         btn.disabled = false;
-        btn.innerHTML = `<span>Booking via WhatsApp</span><span>→</span>`;
+        btn.innerHTML = `<span>Kirim Booking</span><span>→</span>`;
         await refreshMemberSlots();
         alert(error.code === "23505" ? "Jam tersebut baru saja terambil. Silakan pilih jam lain." : "Booking gagal: " + error.message);
         return;
@@ -1615,6 +1903,7 @@
         f.type === "Hitting Partner" ? "Hitting Partner: Ya" : "",
         `Tanggal: ${formatDate(f.date)}`,
         `Jam: ${String(slot.slot_time).slice(0,5)}`,
+        "Status: Menunggu konfirmasi Admin",
         f.note ? `Catatan: ${f.note}` : "",
         "",
         "Mohon konfirmasi booking saya. Terima kasih 🙏"
@@ -1622,6 +1911,8 @@
 
       window.open(`https://wa.me/62882008255252?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
       closeModal();
+      showToast("Booking dikirim. Menunggu konfirmasi Admin.");
+      await loadMemberData();
     }
 
     // ---------------- COACH APP ----------------
@@ -1672,7 +1963,7 @@
       const list = document.getElementById("coachScheduleList");
       const today = new Date().toISOString().slice(0,10);
       const rows = coachBookings.filter(
-        b => b.booking_date >= today && b.status !== "Cancelled"
+        b => b.booking_date >= today && ["Booked","Completed"].includes(b.status)
       );
 
       if(!rows.length){
@@ -1900,6 +2191,65 @@
       document.getElementById("statReviews").textContent = db.reviews.length;
     }
 
+    function bookingStatusActions(b){
+      if(b.status === "Pending Confirmation"){
+        return `
+          <button class="mini-btn" onclick="setBookingStatus('${b.id}','Booked')">Konfirmasi</button>
+          <button class="mini-btn danger" onclick="setBookingStatus('${b.id}','Cancelled')">Cancel</button>
+        `;
+      }
+
+      if(b.status === "Booked"){
+        return `
+          <button class="mini-btn" onclick="setBookingStatus('${b.id}','Completed')">Completed</button>
+          <button class="mini-btn danger" onclick="setBookingStatus('${b.id}','Cancelled')">Cancel</button>
+        `;
+      }
+
+      if(b.status === "Completed"){
+        return `<button class="mini-btn" onclick="setBookingStatus('${b.id}','Booked')">Set Booked</button>`;
+      }
+
+      return `<button class="mini-btn" onclick="setBookingStatus('${b.id}','Booked')">Set Booked</button>`;
+    }
+
+    function renderPendingBookings(){
+      const list = document.getElementById("pendingBookingList");
+      const count = document.getElementById("pendingBookingCount");
+      if(!list) return;
+
+      const rows = db.bookings.filter(b=>b.status==="Pending Confirmation");
+      if(count) count.textContent = String(rows.length);
+
+      if(!rows.length){
+        list.innerHTML = `<div class="empty">Tidak ada booking yang menunggu konfirmasi.</div>`;
+        return;
+      }
+
+      list.innerHTML = rows.map(b=>`
+        <div class="list-card">
+          <div class="list-top">
+            <div class="initial">${initials(memberName(b.member_id))}</div>
+            <div class="grow">
+              <h4>${escapeHtml(memberName(b.member_id))}</h4>
+              <div class="sub">${escapeHtml(b.type)} · ${escapeHtml(b.coach_id ? coachName(b.coach_id) : (b.coach || "Coach ASA"))}</div>
+            </div>
+            <span class="badge pending">Pending</span>
+          </div>
+          <div class="meta-row">
+            <span>📅 ${formatDate(b.booking_date)}</span>
+            <span>🕒 ${escapeHtml(String(b.booking_time || "").slice(0,5))}</span>
+            ${b.type==="Single Session" ? `<span>👥 ${Number(b.pax || 1)} pax</span>` : ""}
+            <span>💳 ${formatRupiah(Number(b.amount || sessionPrice(b.type,b.pax || 1)))}</span>
+          </div>
+          <div class="member-actions">
+            <button class="mini-btn" onclick="openBooking('','', '${b.id}')">Edit</button>
+            ${bookingStatusActions(b)}
+          </div>
+        </div>
+      `).join("");
+    }
+
     function renderBookings(){
       const list = document.getElementById("bookingList");
       const rows = db.bookings.filter(b=>bookingFilter==="all" || b.type===bookingFilter);
@@ -1910,7 +2260,10 @@
       }
 
       list.innerHTML = rows.map(b=>{
-        const badgeClass = b.status==="Completed" ? "dark" : (b.status==="Cancelled" ? "danger" : "");
+        const badgeClass =
+          b.status==="Completed" ? "dark" :
+          b.status==="Cancelled" ? "danger" :
+          b.status==="Pending Confirmation" ? "pending" : "";
         return `
           <div class="list-card">
             <div class="list-top">
@@ -1930,9 +2283,7 @@
             </div>
             <div class="member-actions">
               <button class="mini-btn" onclick="openBooking('','', '${b.id}')">Edit</button>
-              <button class="mini-btn" onclick="toggleBookingStatus('${b.id}','${b.status}')">
-                ${b.status==="Completed" ? "Set Booked" : "Mark Completed"}
-              </button>
+              ${bookingStatusActions(b)}
               <button class="mini-btn danger" onclick="deleteBooking('${b.id}')">Hapus</button>
             </div>
           </div>
@@ -2011,6 +2362,7 @@
 
     function renderAll(){
       renderStats();
+      renderPendingBookings();
       renderBookings();
       renderReviews();
       renderMembers();
@@ -2188,7 +2540,7 @@
       if(coachPeriod) coachPeriod.textContent = periodText.replace("Menampilkan ","").replace("Periode: ","");
 
       const incomeBookings = (db.bookings || []).filter(b=>
-        b.status !== "Cancelled" &&
+        b.status === "Completed" &&
         financeDateMatches(b.booking_date)
       );
 
@@ -2272,7 +2624,7 @@
                   <div class="coach-income-name">${escapeHtml(c.name)}</div>
                 </div>
                 <div class="coach-income-amount">${formatMoney(c.amount)}</div>
-                <div class="coach-income-count">${c.count} booking aktif</div>
+                <div class="coach-income-count">${c.count} booking completed</div>
               </article>
             `).join("")
           : `<div class="empty">Belum ada Coach.</div>`;
@@ -2343,7 +2695,7 @@
                 </div>
                 <div class="finance-amount income">+${formatMoney(t.amount)}</div>
               </div>
-              <div class="finance-source-pill">Otomatis dari booking · ${escapeHtml(t.status || "Booked")}</div>
+              <div class="finance-source-pill">Otomatis dari booking · Completed</div>
             </article>
           `;
         }
@@ -3152,14 +3504,39 @@
     }
 
     // ---------------- MODAL ----------------
+    let modalScrollY = 0;
+
+    function lockPageScroll(){
+      if(document.body.classList.contains("modal-open")) return;
+
+      modalScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+
+      document.documentElement.classList.add("modal-open");
+      document.body.classList.add("modal-open");
+      document.body.style.top = `-${modalScrollY}px`;
+    }
+
+    function unlockPageScroll(){
+      if(!document.body.classList.contains("modal-open")) return;
+
+      document.documentElement.classList.remove("modal-open");
+      document.body.classList.remove("modal-open");
+      document.body.style.top = "";
+
+      window.scrollTo(0, modalScrollY);
+    }
+
     function showModal(title, html){
-      document.getElementById("modalTitle").textContent = title;
+      
+      lockPageScroll();
+document.getElementById("modalTitle").textContent = title;
       document.getElementById("modalBody").innerHTML = html;
       document.getElementById("modal").classList.add("show");
     }
 
     function closeModal(){
-      document.getElementById("modal").classList.remove("show");
+      
+      unlockPageScroll();document.getElementById("modal").classList.remove("show");
       editingMemberId = null;
       editingBookingId = null;
       editingReviewId = null;
@@ -3239,7 +3616,7 @@
           <div class="field">
             <label>STATUS</label>
             <select name="status">
-              ${["Booked","Completed","Cancelled"].map(x=>`<option ${selectedStatus===x?"selected":""}>${x}</option>`).join("")}
+              ${["Pending Confirmation","Booked","Completed","Cancelled"].map(x=>`<option ${selectedStatus===x?"selected":""}>${x}</option>`).join("")}
             </select>
           </div>
 
@@ -3298,12 +3675,16 @@
       showToast(old ? "Booking berhasil diperbarui" : "Booking berhasil ditambahkan");
     }
 
-    async function toggleBookingStatus(id,currentStatus){
-      const next = currentStatus === "Completed" ? "Booked" : "Completed";
-      const { error } = await sb.from("bookings").update({status:next}).eq("id",id);
+    async function setBookingStatus(id,status){
+      if(!["Pending Confirmation","Booked","Completed","Cancelled"].includes(status)){
+        return alert("Status booking tidak valid.");
+      }
+
+      const { error } = await sb.from("bookings").update({status}).eq("id",id);
       if(error) return alert("Gagal mengubah status: " + error.message);
+
       await loadAllData();
-      showToast("Status booking berhasil diperbarui");
+      showToast(`Status booking: ${status}`);
     }
 
     async function deleteBooking(id){
