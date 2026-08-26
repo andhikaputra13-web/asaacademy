@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#111814" />
   <title>ASA Academy — Admin</title>
 
@@ -798,6 +798,82 @@
 
     @supports not (height: 100dvh){
       .modal-card{max-height:88vh}
+    }
+
+
+    /* Responsive viewport safeguards */
+    html{
+      width:100%;
+      min-height:100%;
+      -webkit-text-size-adjust:100%;
+      text-size-adjust:100%;
+      overflow-x:hidden;
+    }
+
+    body{
+      width:100%;
+      min-width:0;
+      min-height:100%;
+      overflow-x:hidden;
+    }
+
+    *,*::before,*::after{
+      box-sizing:border-box;
+    }
+
+    img,svg,video,canvas{
+      max-width:100%;
+      height:auto;
+    }
+
+    input,select,textarea,button{
+      max-width:100%;
+    }
+
+    .app-shell,
+    .member-shell,
+    .coach-shell,
+    .auth-screen,
+    .public-booking-screen{
+      width:100%;
+      min-width:0;
+    }
+
+    @media (max-width: 480px){
+      body{
+        font-size:14px;
+      }
+
+      .auth-wrap,
+      .public-booking-wrap{
+        width:100%;
+        max-width:100%;
+      }
+    }
+
+    @media (min-width: 768px){
+      .auth-wrap,
+      .public-booking-wrap{
+        width:min(100%,560px);
+      }
+    }
+
+    @media (min-width: 1024px){
+      .app-shell,
+      .member-shell,
+      .coach-shell{
+        width:min(100%,1200px);
+        margin-inline:auto;
+      }
+    }
+
+
+    @media (max-width: 768px){
+      input,
+      select,
+      textarea{
+        font-size:16px !important;
+      }
     }
 
 </style>
