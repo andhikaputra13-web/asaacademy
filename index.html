@@ -1563,7 +1563,10 @@
     }
 
     async function logout(){
-      try{
+      
+      const confirmed = confirm("Yakin ingin logout dari ASA Academy?");
+      if(!confirmed) return;
+try{
         await sb.auth.signOut();
       }catch(err){
         console.warn("Logout:",err);
