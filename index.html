@@ -1383,7 +1383,7 @@
       document.getElementById("signupForm")?.classList.toggle("hidden", !signup);
       document.getElementById("authTitle").textContent = signup ? "Buat Akun" : "Login";
       document.getElementById("authContext").textContent = pendingPublicSession
-        ? `${signup ? "Buat akun" : "Login"} untuk melanjutkan ${pendingPublicSession}.`
+        ? `${signup ? "Buat akun" : "Login"} untuk masuk ke halaman Booking Session.`
         : (signup ? "Buat akun Member dan langsung mulai booking." : "Masuk ke akun ASA Academy.");
       clearAuthMessage();
     }
@@ -1620,11 +1620,15 @@
         document.getElementById("memberShell").classList.remove("hidden");
         await loadMemberData();
 
-        if(pendingPublicSession){
-          const selectedSession = pendingPublicSession;
-          pendingPublicSession = null;
-          setTimeout(()=>openMemberBooking(selectedSession),80);
-        }
+        // Setelah login/daftar, selalu tampilkan halaman awal Booking Session.
+        // Session yang dipilih sebelum login tidak langsung membuka pop-up.
+        pendingPublicSession = null;
+        document.querySelectorAll("#memberShell .member-page").forEach(page=>{
+          page.classList.toggle("active", page.id === "memberBookingPage");
+        });
+        document.querySelectorAll("#memberShell [data-member-page]").forEach(btn=>{
+          btn.classList.toggle("active", btn.dataset.memberPage === "memberBookingPage");
+        });
       }
       checkingRole = false;
     }
