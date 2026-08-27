@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id class="app-booting">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
@@ -915,9 +915,80 @@
       .sheet-head{margin-bottom:11px}
     }
 
+
+    /* Prevent auth-page flash while restoring persistent session */
+    html.app-booting body{
+      overflow:hidden;
+    }
+
+    html.app-booting #publicBookingScreen,
+    html.app-booting #authScreen,
+    html.app-booting #appShell,
+    html.app-booting #memberShell,
+    html.app-booting #coachShell{
+      visibility:hidden !important;
+      opacity:0 !important;
+      pointer-events:none !important;
+    }
+
+    #appBootScreen{
+      position:fixed;
+      inset:0;
+      z-index:9999;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      background:var(--bg);
+    }
+
+    html.app-booting #appBootScreen{
+      display:flex;
+    }
+
+    .app-boot-inner{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:12px;
+    }
+
+    .app-boot-logo{
+      width:52px;
+      height:52px;
+      border-radius:16px;
+      display:grid;
+      place-items:center;
+      background:var(--text);
+      color:var(--brand);
+      font-weight:950;
+      font-size:14px;
+      letter-spacing:-.6px;
+    }
+
+    .app-boot-spinner{
+      width:18px;
+      height:18px;
+      border-radius:50%;
+      border:2px solid var(--line);
+      border-top-color:var(--text);
+      animation:appBootSpin .7s linear infinite;
+    }
+
+    @keyframes appBootSpin{
+      to{transform:rotate(360deg)}
+    }
+
 </style>
 </head>
 <body>
+
+  <div id="appBootScreen" aria-hidden="true">
+    <div class="app-boot-inner">
+      <div class="app-boot-logo">ASA</div>
+      <div class="app-boot-spinner"></div>
+    </div>
+  </div>
+
 
   <!-- PUBLIC BOOKING LANDING -->
   <section id="publicBookingScreen" class="public-booking-screen">
@@ -1363,14 +1434,27 @@
     }
 
 
+    let appBootFinished = false;
+
+    function finishAppBoot(){
+      if(appBootFinished) return;
+      appBootFinished = true;
+
+      requestAnimationFrame(()=>{
+        document.documentElement.classList.remove("app-booting");
+      });
+    }
+
     // ---------------- AUTH ----------------
-    function showPublicBooking(){
+    function showPublicBooking({finishBoot=true}={}){
       document.getElementById("publicBookingScreen")?.classList.remove("hidden");
       document.getElementById("authScreen")?.classList.add("hidden");
       document.getElementById("appShell")?.classList.add("hidden");
       document.getElementById("memberShell")?.classList.add("hidden");
       document.getElementById("coachShell")?.classList.add("hidden");
       clearAuthMessage();
+
+      if(finishBoot) finishAppBoot();
     }
 
     function selectPublicSession(type){
@@ -1642,6 +1726,7 @@
           btn.classList.toggle("active", btn.dataset.memberPage === "memberBookingPage");
         });
       }
+      finishAppBoot();
       checkingRole = false;
     }
 
@@ -1661,6 +1746,10 @@ try{
     // Menutup tab/browser tidak menghapus session. Session hanya berakhir
     // saat Logout dipilih atau Supabase menyatakan session sudah tidak valid.
     sb.auth.onAuthStateChange((event, session)=>{
+      if(!appBootFinished && event === "INITIAL_SESSION"){
+        return;
+      }
+
       if(event === "SIGNED_OUT"){
         showLoggedOutState();
         return;
@@ -1691,7 +1780,8 @@ try{
 
         if(error){
           console.warn("Restore session:", error);
-          showPublicBooking();
+          showPublicBooking({finishBoot:false});
+          finishAppBoot();
           return;
         }
 
@@ -1702,10 +1792,12 @@ try{
           return;
         }
 
-        showPublicBooking();
+        showPublicBooking({finishBoot:false});
+        finishAppBoot();
       }catch(err){
         console.warn("Init session:", err);
-        showPublicBooking();
+        showPublicBooking({finishBoot:false});
+        finishAppBoot();
       }
     }
 
