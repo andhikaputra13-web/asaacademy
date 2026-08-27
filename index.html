@@ -1279,7 +1279,13 @@
     const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_z5NvUm_TCIFJKq4vETEVEA_smkxGaaF";
 
     const { createClient } = supabase;
-    const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+    const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+      }
+    });
 
     let currentUser = null;
     let pendingPublicSession = null;
@@ -1652,6 +1658,8 @@ try{
     }
 
     // Sinkronkan session antar-tab / antar-akun.
+    // Menutup tab/browser tidak menghapus session. Session hanya berakhir
+    // saat Logout dipilih atau Supabase menyatakan session sudah tidak valid.
     sb.auth.onAuthStateChange((event, session)=>{
       if(event === "SIGNED_OUT"){
         showLoggedOutState();
@@ -1664,6 +1672,12 @@ try{
           window.location.reload();
           return;
         }
+
+        // Jika session kembali aktif sementara UI belum memuat user,
+        // pulihkan dashboard tanpa meminta login ulang.
+        if(!currentUser && !checkingRole){
+          setTimeout(()=>handleSignedIn(session.user),0);
+        }
       }
 
       if(event === "TOKEN_REFRESHED" && session?.user){
@@ -1672,7 +1686,27 @@ try{
     });
 
     async function init(){
-      showPublicBooking();
+      try{
+        const { data, error } = await sb.auth.getSession();
+
+        if(error){
+          console.warn("Restore session:", error);
+          showPublicBooking();
+          return;
+        }
+
+        const session = data?.session;
+
+        if(session?.user){
+          await handleSignedIn(session.user);
+          return;
+        }
+
+        showPublicBooking();
+      }catch(err){
+        console.warn("Init session:", err);
+        showPublicBooking();
+      }
     }
 
 
