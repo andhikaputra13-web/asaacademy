@@ -978,11 +978,98 @@
       to{transform:rotate(360deg)}
     }
 
+
+    /* Universal auth boot state: mobile, tablet, desktop */
+    html.app-booting{
+      width:100%;
+      height:100%;
+      overflow:hidden !important;
+      background:var(--bg);
+    }
+
+    html.app-booting body{
+      width:100%;
+      min-height:100%;
+      overflow:hidden !important;
+      background:var(--bg);
+    }
+
+    html.app-booting #publicBookingScreen,
+    html.app-booting #authScreen,
+    html.app-booting #appShell,
+    html.app-booting #memberShell,
+    html.app-booting #coachShell{
+      display:none !important;
+      visibility:hidden !important;
+      opacity:0 !important;
+      pointer-events:none !important;
+    }
+
+    #appBootScreen{
+      position:fixed;
+      inset:0;
+      width:100vw;
+      height:100dvh;
+      min-height:100vh;
+      z-index:2147483647;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      background:var(--bg);
+      overflow:hidden;
+      padding:
+        max(20px, env(safe-area-inset-top))
+        max(20px, env(safe-area-inset-right))
+        max(20px, env(safe-area-inset-bottom))
+        max(20px, env(safe-area-inset-left));
+    }
+
+    html.app-booting #appBootScreen{
+      display:flex !important;
+    }
+
+    .app-boot-inner{
+      width:100%;
+      max-width:420px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:12px;
+      text-align:center;
+    }
+
+    @supports not (height:100dvh){
+      #appBootScreen{
+        height:100vh;
+      }
+    }
+
+    @media (min-width:768px){
+      .app-boot-logo{
+        width:58px;
+        height:58px;
+        border-radius:18px;
+        font-size:15px;
+      }
+
+      .app-boot-spinner{
+        width:20px;
+        height:20px;
+      }
+    }
+
+    @media (min-width:1200px){
+      .app-boot-inner{
+        max-width:520px;
+      }
+    }
+
 </style>
 </head>
 <body>
 
-  <div id="appBootScreen" aria-hidden="true">
+  <div id="appBootScreen" aria-hidden="true" style="background:#f6f7f3">
     <div class="app-boot-inner">
       <div class="app-boot-logo">ASA</div>
       <div class="app-boot-spinner"></div>
@@ -1441,7 +1528,15 @@
       appBootFinished = true;
 
       requestAnimationFrame(()=>{
+        const bootScreen = document.getElementById("appBootScreen");
         document.documentElement.classList.remove("app-booting");
+
+        requestAnimationFrame(()=>{
+          if(bootScreen){
+            bootScreen.style.display = "none";
+            bootScreen.style.removeProperty("background");
+          }
+        });
       });
     }
 
